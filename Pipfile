@@ -6,6 +6,9 @@ name = "pypi"
 [packages]
 docopt = "*"
 requests = "*"
+svglib = "*"
+lxml = "*"
+reportlab = "*"
 
 [dev-packages]
 
