@@ -11,7 +11,8 @@ Options:
     --portrait     - Orientate the map in portrait, rather than landscape
 
 Arguments:
-    <location> - A map location to centre the map on, in the form of <x>,<y> coordinates
+    <location> - A map location to centre the map on. This can take the
+                 form of a place name or ListMap <x>,<y> coordinates
     <scale>    - The scale to generate the map at
 """
 
@@ -43,10 +44,32 @@ def svgns(fullname):
     return f'{{{namespace}}}{name}'
 
 
-def generateMap(location, scale):
+def find(placename):
+    """Find the coordinates of a map location by its place name"""
+    placename = placename.casefold()
+
+    url = f'{API_URL}/Public/PlacenamePoints/MapServer/find'
+    params = {
+        'f': 'json',
+        'searchText': placename,
+        'layers': '0',
+    }
+
+    r = requests.get(url, params=params)
+    r.raise_for_status()
+
+    for location in r.json()['results']:
+        if location['value'].casefold() == placename:
+            geometry = location['geometry']
+            return f'{geometry["x"]},{geometry["y"]}'
+
+
+def generate_map(location, scale):
     """Generate a PDF map"""
     if not re.match(r'[-\d.]+,[-\d.]+', location):
-        raise Exception('Location must be x,y coordinates')
+        location = find(location)
+    if not location:
+        raise Exception('Location not found')
 
     url = f'{API_URL}/Basemaps/{BASE_MAP}/MapServer/export'
     params = {
@@ -74,4 +97,4 @@ def generateMap(location, scale):
 if __name__ == '__main__':
     args = docopt(__doc__)
 
-    generateMap(args.get('<location>'), args.get('<scale>'))
+    generate_map(args.get('<location>'), args.get('<scale>'))
