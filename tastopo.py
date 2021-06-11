@@ -2,18 +2,19 @@
 
 """Map Tasmania - Generate printable maps from TheList mapping service
 
-Usage: maptas generate [options] <location> <scale>
+Usage: maptas generate [options] <location>
 
 Options:
-    -h --help      - Show this help message
-    --version      - Show version information
-    --size <paper> - Specify the paper size for printing [default: A4]
-    --portrait     - Orientate the map in portrait, rather than landscape
+    -h --help        - Show this help message
+    --version        - Show version information
+    --scale <ratio>  - Specify the scale of the printed map [default: 25000]
+    --paper <size>   - Specify the paper size for printing [default: A4]
+    --portrait       - Orientate the map in portrait, rather than landscape
+    --format <type>  - The file format to export; either PDF or SVG [default: PDF]
 
-Arguments:
-    <location> - A map location to centre the map on. This can take the
-                 form of a place name or ListMap <x>,<y> coordinates
-    <scale>    - The scale to generate the map at
+Map location
+The <location> argument is used to specify the centre of the map. This argument
+can take the form of a place name or a pair of ListMap <x>,<y> coordinates.
 """
 
 import re
@@ -34,7 +35,15 @@ SVG_NAMESPACES = {
 API_URL = 'https://services.thelist.tas.gov.au/arcgis/rest/services'
 BASE_MAP = 'Topographic'
 RESOLUTION = 2000
+PRINT_DPI = 150
 TEMPLATE_PATH = './templates/a4-landscape.svg'
+IMAGE_BLEED = 2  # Allow for misalignment in PDF generation
+
+MAP_SHEETS = [{
+    'size': 'a4',
+    'orientation': 'landscape',
+    'viewport': (286.86, 185.67),
+}]
 
 
 def svgns(fullname):
@@ -44,40 +53,56 @@ def svgns(fullname):
     return f'{{{namespace}}}{name}'
 
 
-def find(placename):
+class MapSheet:
+    def __init__(self, config):
+        self.config = config
+
+    def mapsize(self):
+        """Get the required map with and height in pixels"""
+        resolution = PRINT_DPI / 25.4
+        return [round(resolution * (i + 2 * IMAGE_BLEED)) for i in self.config['viewport']]
+
+
+def get_mapsheet(size, orientation):
+    """Select a map sheet by size and orientation"""
+    for config in MAP_SHEETS:
+        if config['size'] == size.lower() and config['orientation'] == orientation.lower():
+            return MapSheet(config)
+
+
+def find_location(location):
     """Find the coordinates of a map location by its place name"""
-    placename = placename.casefold()
+    if re.match(r'[-\d.]+,[-\d.]+', location):
+        return location
 
     url = f'{API_URL}/Public/PlacenamePoints/MapServer/find'
     params = {
         'f': 'json',
-        'searchText': placename,
+        'searchText': location,
         'layers': '0',
     }
 
     r = requests.get(url, params=params)
     r.raise_for_status()
 
-    for location in r.json()['results']:
-        if location['value'].casefold() == placename:
-            geometry = location['geometry']
-            return f'{geometry["x"]},{geometry["y"]}'
+    location = location.casefold()
+    for place in r.json()['results']:
+        if place['value'].casefold() == location:
+            return '{x},{y}'.format(**place['geometry'])
+
+    raise Exception('Location {} not found')
 
 
-def generate_map(location, scale):
-    """Generate a PDF map"""
-    if not re.match(r'[-\d.]+,[-\d.]+', location):
-        location = find(location)
-    if not location:
-        raise Exception('Location not found')
-
+def compose_map(location, scale, sheet):
+    """Compose a map sheet as SVG"""
     url = f'{API_URL}/Basemaps/{BASE_MAP}/MapServer/export'
     params = {
         'f': 'image',
         'format': 'png',
         'bbox': f'{location},{location}',
         'mapScale': scale,
-        'size': f'{RESOLUTION},{RESOLUTION}',
+        'size': '{},{}'.format(*sheet.mapsize()),
+        'dpi': PRINT_DPI,
     }
 
     r = requests.get(url, params=params)
@@ -86,15 +111,34 @@ def generate_map(location, scale):
     del r
 
     template = etree.parse(TEMPLATE_PATH)
-    image_node = template.xpath('//svg:image[@id="mapData"]', namespaces=SVG_NAMESPACES)[0]
+    image_node = template.xpath('//svg:image[@id="map-data"]', namespaces=SVG_NAMESPACES)[0]
     image_node.attrib[svgns('xlink:href')] = f'data:image/png;base64,{map_data.decode("utf-8")}'
 
-    renderer = SvgRenderer(None)
-    drawing = renderer.render(template.getroot())
-    renderPDF.drawToFile(drawing, 'map.pdf')
+    return template.getroot()
+
+
+def export_map(svg, format):
+    """Export a map document"""
+    format = format.casefold()
+    if format == 'svg':
+        with open('map.svg', 'wb') as f:
+            f.write(etree.tostring(svg))
+        return
+    if format == 'pdf':
+        renderer = SvgRenderer(None)
+        drawing = renderer.render(svg)
+        renderPDF.drawToFile(drawing, 'map.pdf')
+        return
+
+    raise Exception(f'Format \'{format}\' not suppported')
 
 
 if __name__ == '__main__':
     args = docopt(__doc__)
 
-    generate_map(args.get('<location>'), args.get('<scale>'))
+    orientation = 'portrait' if args.get('--portrait') else 'landscape'
+    sheet = get_mapsheet(args.get('--paper'), orientation)
+    location = find_location(args.get('<location>'))
+
+    svg = compose_map(location, int(args.get('--scale')), sheet)
+    export_map(svg, args.get('--format'))
