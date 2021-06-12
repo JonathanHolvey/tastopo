@@ -1,13 +1,14 @@
 #! /usr/bin/env python3
 
-"""Map Tasmania - Generate printable maps from TheList mapping service
+"""Tasmania Topo - Generate printable topographic maps from TheList mapping service
 
-Usage: maptas generate [options] <location>
+Usage: tastopo generate [options] <location>
 
 Options:
     -h --help        - Show this help message
     --version        - Show version information
     --scale <ratio>  - Specify the scale of the printed map [default: 25000]
+    --title <text>   - Set the title on the map sheet, instead of the location name
     --paper <size>   - Specify the paper size for printing [default: A4]
     --portrait       - Orientate the map in portrait, rather than landscape
     --format <type>  - The file format to export; either PDF or SVG [default: PDF]
@@ -85,15 +86,14 @@ def find_location(location):
     r = requests.get(url, params=params)
     r.raise_for_status()
 
-    location = location.casefold()
     for place in r.json()['results']:
-        if place['value'].casefold() == location:
-            return '{x},{y}'.format(**place['geometry'])
+        if place['value'].casefold() == location.casefold():
+            return place['geometry']['x'], place['geometry']['y']
 
     raise Exception('Location {} not found')
 
 
-def compose_map(location, scale, sheet):
+def compose_map(location, scale, sheet, title):
     """Compose a map sheet as SVG"""
     url = f'{API_URL}/Basemaps/{BASE_MAP}/MapServer/export'
     params = {
@@ -112,7 +112,10 @@ def compose_map(location, scale, sheet):
 
     template = etree.parse(TEMPLATE_PATH)
     image_node = template.xpath('//svg:image[@id="map-data"]', namespaces=SVG_NAMESPACES)[0]
+    title_node = template.xpath('//svg:text[@id="map-title"]', namespaces=SVG_NAMESPACES)[0]
+
     image_node.attrib[svgns('xlink:href')] = f'data:image/png;base64,{map_data.decode("utf-8")}'
+    title_node.text = title
 
     return template.getroot()
 
@@ -139,6 +142,8 @@ if __name__ == '__main__':
     orientation = 'portrait' if args.get('--portrait') else 'landscape'
     sheet = get_mapsheet(args.get('--paper'), orientation)
     location = find_location(args.get('<location>'))
+    title = args.get('--title') or args.get('<location>').title()
+    print(location)
 
-    svg = compose_map(location, int(args.get('--scale')), sheet)
+    svg = compose_map(location, int(args.get('--scale')), sheet, title)
     export_map(svg, args.get('--format'))

@@ -4,9 +4,10 @@
    <rect x="4.8783" y="5.9088" width="286.86" height="185.67" fill="none" stop-color="#000000" stroke="#050505" stroke-width=".2"/>
   </clipPath>
  </defs>
- <rect x="0" y="0" width="100%" height="100%" fill="#fff"/>
+ <rect id="background" x="0" y="0" width="100%" height="100%" fill="#fff"/>
  <image id="map-data" x="2.8783" y="3.9088" width="290.86" height="189.67" clip-path="url(#clipPath963)" stroke-width="1.8102" xlink:href="" preserveAspectRatio="none"/>
- <rect x="4.8783" y="5.9088" width="286.86" height="185.67" fill="none" stop-color="#000000" stroke="#050505" stroke-width=".2"/>
+ <rect id="map-border" x="4.8783" y="5.9088" width="286.86" height="185.67" fill="none" stop-color="#000000" stroke="#050505" stroke-width=".2"/>
+ <text id="map-title" x="4.5644917" y="197.96719" font-family="'Noto Sans'" font-size="3.2347px" style="line-height:1.25" xml:space="preserve">Map Title</text>
  <text font-family="'Noto Sans'" font-size="4.2333px" font-weight="bold" letter-spacing="0px" word-spacing="0px" style="line-height:1.25;shape-inside:url(#rect863);white-space:pre" xml:space="preserve"/>
  <text transform="translate(-202.07 -34.237)" x="206.79874" y="235.76855" font-family="'Noto Sans'" font-size="1.7639px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="inline-size:124.528;line-height:1.1;white-space:pre" xml:space="preserve"><tspan x="206.79874" y="235.76855"><tspan font-size="1.7639px" stroke-width=".26458">Map data is compiled from a variety of sources and hence its accuracy is variable. If you wish to make decisions based on this data you should consult </tspan></tspan><tspan x="206.79874" y="237.70883"><tspan font-size="1.7639px" stroke-width=".26458">with relevant authorities. Apart from any use permitted under the Copyright Act 1968, no part of the report may be copied without the permission of </tspan></tspan><tspan x="206.79874" y="239.64911"><tspan font-size="1.7639px" stroke-width=".26458">the General Manager, Land Tasmania, Department of Primary Industries, Parks, Water and Environment, GPO Box 44, Hobart 7001</tspan></tspan></text>
  <g transform="matrix(.59145 0 0 .59145 121.79 83.172)">
@@ -16,7 +17,6 @@
   </g>
   <text x="275.65652" y="193.62787" font-family="'Noto Sans'" font-size="4.2293px" letter-spacing="0px" stroke-width=".63792" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan x="275.65652" y="193.62787" stroke-width=".63792">N</tspan></text>
  </g>
- <text x="4.5644917" y="197.96719" font-family="'Noto Sans'" font-size="3.2347px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan x="4.5644917" y="197.96719" stroke-width=".26458">Map Title</tspan></text>
  <rect x="4.8783" y="5.9088" width="286.86" height="185.67" fill="none" stop-color="#000000" stroke="#050505" stroke-width=".2"/>
  <g transform="translate(-14.053)">
   <text x="233.41417" y="205.8674" font-family="'Noto Sans'" font-size="1.7333px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan x="233.41417" y="205.8674" stroke-width=".26458">Generated with data from www.thelist.tas.gov.au</tspan></text>
