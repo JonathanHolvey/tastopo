@@ -25,8 +25,8 @@ from lxml import etree
 from svglib.svglib import SvgRenderer
 from reportlab.graphics import renderPDF
 
-import mapping
-from layout import Layout
+from src import mapping
+from src.layout import Layout
 
 
 def export_map(svg, filetype):

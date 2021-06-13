@@ -1,7 +1,7 @@
 import json
 
-from api import ListAPI, cachedproperty
-from paper import Paper
+from .api import ListAPI, cachedproperty
+from .paper import Paper
 
 
 class Sheet(Paper):

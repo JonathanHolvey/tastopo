@@ -1,3 +1,5 @@
+from importlib import resources
+
 from base64 import b64encode
 from lxml import etree
 
@@ -40,10 +42,11 @@ class SVG:
 
 
 class Layout(SVG):
-    TEMPLATE_PATH = './template.svg'
     """A map sheet layout"""
     def __init__(self, sheet):
-        super().__init__(self.TEMPLATE_PATH)
+        with resources.path(__package__, 'template.svg') as template_path:
+            super().__init__(str(template_path))
+
         self.sheet = sheet
         self.select({
             'image': '//svg:image[@id="map-data"]',
