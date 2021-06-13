@@ -55,6 +55,12 @@ class Layout(SVG):
 
     def _size(self, sheet):
         """Prepare the template for the sheet size in use"""
+        root = self.document.getroot()
+        width, height = sheet.dimensions()
+        root.attrib['width'] = f'{width}mm'
+        root.attrib['height'] = f'{height}mm'
+        root.attrib['viewBox'] = f'0 0 {width} {height}'
+
         self.position('image', *sheet.viewport(True))
         self.position('border', *sheet.viewport())
         self.position('clip', *sheet.viewport())
