@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 
-"""Tasmania Topo - Generate printable topographic maps from TheList mapping service
+"""TasTopo - Generate printable topographic maps from TheList mapping service
 
 Usage: tastopo generate [options] <location>
 
@@ -14,12 +14,14 @@ Options:
     --format <type>  - The file format to export; either PDF or SVG [default: PDF]
 
 Map location
-The <location> argument is used to specify the centre of the map. This argument
-can take the form of a place name or a pair of ListMap <x>,<y> coordinates.
+    The <location> argument is used to specify the centre of the map. This argument
+    can take the form of a place name or a geo URI. Examples:
+    - 'South East Cape'
+    - 'geo:-43.643611,146.8275'
 """
 
-import re
 from base64 import b64encode
+import json
 
 from docopt import docopt
 import requests
@@ -27,13 +29,14 @@ from lxml import etree
 from svglib.svglib import SvgRenderer
 from reportlab.graphics import renderPDF
 
+from api import ListAPI, cached_property
+
 
 SVG_NAMESPACES = {
     'svg': 'http://www.w3.org/2000/svg',
     'xlink': 'http://www.w3.org/1999/xlink',
 }
 
-API_URL = 'https://services.thelist.tas.gov.au/arcgis/rest/services'
 BASE_MAP = 'Topographic'
 RESOLUTION = 2000
 PRINT_DPI = 150
@@ -71,35 +74,49 @@ def get_mapsheet(size, orientation):
             return MapSheet(config)
 
 
-def find_location(location):
-    """Find the coordinates of a map location by its place name"""
-    if re.match(r'[-\d.]+,[-\d.]+', location):
-        return location
+class MapLocation():
+    """Find the coordinates of a map location"""
+    def __init__(self, description):
+        self.api = ListAPI()
+        self.description = description
 
-    url = f'{API_URL}/Public/PlacenamePoints/MapServer/find'
-    params = {
-        'f': 'json',
-        'searchText': location,
-        'layers': '0',
-    }
+    @cached_property
+    def coordinates(self):
+        if ':' in self.description and self.description.split(':')[0] == 'geo':
+            return self._from_decimaldegrees(self.description[4:])
+        return self._from_placename(self.description)
 
-    r = requests.get(url, params=params)
-    r.raise_for_status()
+    def _from_placename(self, placename):
+        """Look up a location from a place name"""
+        r = self.api.get('Public/PlacenamePoints/MapServer/find', params={
+            'searchText': placename,
+            'layers': '0',
+        })
 
-    for place in r.json()['results']:
-        if place['value'].casefold() == location.casefold():
-            return place['geometry']['x'], place['geometry']['y']
+        for place in r.json()['results']:
+            if place['value'].casefold() == placename.casefold():
+                return place['geometry']['x'], place['geometry']['y']
 
-    raise Exception('Location {} not found')
+        raise Exception(f'Location {self.description} not found')
+
+    def _from_decimaldegrees(self, coordinates):
+        """Look up a location from decimal degree coordinates"""
+        r = self.api.get('Utilities/Geometry/GeometryServer/fromGeoCoordinateString', params={
+            'sr': '3857',
+            'conversionType': 'DD',
+            'strings': json.dumps([coordinates]),
+        })
+
+        return r.json()['coordinates'][0]
 
 
 def compose_map(location, scale, sheet, title):
     """Compose a map sheet as SVG"""
-    url = f'{API_URL}/Basemaps/{BASE_MAP}/MapServer/export'
+    url = f'{ListAPI.BASE_URL}/Basemaps/{BASE_MAP}/MapServer/export'
     params = {
         'f': 'image',
         'format': 'png',
-        'bbox': f'{location},{location}',
+        'bbox': '{0},{1},{0},{1}'.format(*location.coordinates),
         'mapScale': scale,
         'size': '{},{}'.format(*sheet.mapsize()),
         'dpi': PRINT_DPI,
@@ -141,9 +158,8 @@ if __name__ == '__main__':
 
     orientation = 'portrait' if args.get('--portrait') else 'landscape'
     sheet = get_mapsheet(args.get('--paper'), orientation)
-    location = find_location(args.get('<location>'))
+    location = MapLocation(args.get('<location>'))
     title = args.get('--title') or args.get('<location>').title()
-    print(location)
 
     svg = compose_map(location, int(args.get('--scale')), sheet, title)
     export_map(svg, args.get('--format'))
