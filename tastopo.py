@@ -20,56 +20,13 @@ Map location
     - 'geo:-43.643611,146.8275'
 """
 
-from base64 import b64encode
-
 from docopt import docopt
 from lxml import etree
 from svglib.svglib import SvgRenderer
 from reportlab.graphics import renderPDF
 
 import mapping
-
-
-TEMPLATE_PATH = './template.svg'
-SVG_NAMESPACES = {
-    'svg': 'http://www.w3.org/2000/svg',
-    'xlink': 'http://www.w3.org/1999/xlink',
-}
-
-
-def svgns(fullname):
-    """Convert a SVG namespace prefix into a full namespace URI"""
-    [ns, name] = fullname.split(':')
-    namespace = SVG_NAMESPACES[ns]
-    return f'{{{namespace}}}{name}'
-
-
-def set_position(node, x, y, width, height):
-    """Set the size and position of a SVG node"""
-    node.attrib['x'] = str(x)
-    node.attrib['y'] = str(y)
-    node.attrib['width'] = str(width)
-    node.attrib['height'] = str(height)
-
-
-def compose_map(sheet, image, title):
-    """Compose a map sheet as SVG"""
-    map_data = b64encode(image.mapdata)
-
-    template = etree.parse(TEMPLATE_PATH)
-    image_node = template.xpath('//svg:image[@id="map-data"]', namespaces=SVG_NAMESPACES)[0]
-    title_node = template.xpath('//svg:text[@id="map-title"]', namespaces=SVG_NAMESPACES)[0]
-    border_node = template.xpath('//svg:rect[@id="map-border"]', namespaces=SVG_NAMESPACES)[0]
-    clip_node = template.xpath('//svg:clipPath[@id="map-clip"]/svg:rect', namespaces=SVG_NAMESPACES)[0]
-
-    image_node.attrib[svgns('xlink:href')] = f'data:image/png;base64,{map_data.decode("utf-8")}'
-    title_node.text = title
-
-    set_position(image_node, *sheet.viewport(True))
-    set_position(border_node, *sheet.viewport())
-    set_position(clip_node, *sheet.viewport())
-
-    return template.getroot()
+from layout import Layout
 
 
 def export_map(svg, filetype):
@@ -97,5 +54,6 @@ if __name__ == '__main__':
     image = mapping.Image(location, sheet, args.get('--scale'))
     title = args.get('--title') or args.get('<location>').title()
 
-    svg = compose_map(sheet, image, title)
-    export_map(svg, args.get('--format'))
+    layout = Layout(sheet)
+    layout.compose(image, title)
+    export_map(layout.document.getroot(), args.get('--format'))

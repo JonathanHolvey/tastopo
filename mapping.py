@@ -1,6 +1,6 @@
 import json
 
-from api import ListAPI, cached_property
+from api import ListAPI, cachedproperty
 from paper import Paper
 
 
@@ -47,7 +47,7 @@ class Location():
         self.api = ListAPI()
         self.description = description
 
-    @cached_property
+    @cachedproperty
     def coordinates(self):
         if ':' in self.description and self.description.split(':')[0] == 'geo':
             return self._from_decimaldegrees(self.description[4:])
@@ -87,7 +87,7 @@ class Image():
         self.sheet = sheet
         self.scale = scale
 
-    @cached_property
+    @cachedproperty
     def mapdata(self):
         return self._maplayer(self.BASE_MAP)
 

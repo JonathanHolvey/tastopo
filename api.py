@@ -3,7 +3,7 @@ import functools
 from urllib.parse import urljoin
 
 
-class cached_property(object):
+class cachedproperty(object):
     """A decorator which gets a class property once and replaces itself with the property value"""
     def __init__(self, getter):
         self.getter = getter
