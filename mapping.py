@@ -1,32 +1,44 @@
 import json
 
 from api import ListAPI, cached_property
-
-MAP_SHEETS = [{
-    'size': 'a4',
-    'orientation': 'landscape',
-    'viewport': (286.86, 185.67),
-}]
+from paper import Paper
 
 
-class Sheet:
+class Sheet(Paper):
     PRINT_DPI = 150
     IMAGE_BLEED = 2
+    MARGIN_BOTTOM = 18
+    MARGIN_SIDE = 4
 
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, size, rotated=False):
+        super().__init__(size)
+        self.rotated = rotated
 
-    def mapsize(self):
+    def dimensions(self):
+        """Get the sheet dimensions; landscape by default"""
+        dimensions = super().dimensions()
+        return reversed(dimensions) if not self.rotated else dimensions
+
+    def imagesize(self):
         """Get the required map with and height in pixels"""
-        resolution = self.PRINT_DPI / 25.4
-        return [round(resolution * (i + 2 * self.IMAGE_BLEED)) for i in self.config['viewport']]
+        x, y, width, height = self.viewport(True)
+        return self.pixels(width), self.pixels(height)
 
+    def viewport(self, with_bleed=False):
+        """Get the position, width and height of the map view in mm"""
+        bleed = self.IMAGE_BLEED if with_bleed else 0
+        width, height = self.dimensions()
 
-def get_sheet(size, orientation):
-    """Select a map sheet by size and orientation"""
-    for config in MAP_SHEETS:
-        if config['size'] == size.lower() and config['orientation'] == orientation.lower():
-            return Sheet(config)
+        x = self.MARGIN_SIDE - bleed
+        y = x
+        width -= 2 * x
+        height -= x + self.MARGIN_BOTTOM - bleed
+
+        return x, y, width, height
+
+    def pixels(self, size):
+        """Convert a physical size in mm into pixels"""
+        return size * self.PRINT_DPI / 25.4
 
 
 class Location():
@@ -86,7 +98,7 @@ class Image():
             'format': 'png',
             'bbox': '{0},{1},{0},{1}'.format(*self.location.coordinates),
             'mapScale': self.scale,
-            'size': '{},{}'.format(*self.sheet.mapsize()),
+            'size': '{},{}'.format(*self.sheet.imagesize()),
             'dpi': self.sheet.PRINT_DPI,
         })
         return r.content
