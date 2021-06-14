@@ -25,13 +25,10 @@ class ListAPI(requests.Session):
         'f': 'json',
     }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def request(self, method, url, *args, **kwargs):
         url = urljoin(self.BASE_URL, url)
-        kwargs['params'] = {**self.DEFAULT_PARAMS, **kwargs.get('params', {})}
+        params = {**self.DEFAULT_PARAMS, **kwargs.pop('params', {})}
 
-        response = super().request(method, url, *args, **kwargs)
+        response = super().request(method, url, *args, params=params, **kwargs)
         response.raise_for_status()
         return response
