@@ -11,23 +11,25 @@ class SVG:
         'xlink': 'http://www.w3.org/1999/xlink',
     }
 
-    def __init__(self, filepath):
-        self.document = etree.parse(filepath)
-        self.elements = {}
+    def __init__(self, filepath, aliases):
+        self.document = etree.parse(str(filepath))
+        self.elements = self._alias(aliases)
+
+    def _alias(self, paths):
+        """Build a dictionary of element aliases"""
+        elements = {}
+        for key, path in paths.items():
+            try:
+                elements[key] = self.document.xpath(path, namespaces=self.NAMESPACES)[0]
+            except AttributeError:
+                pass
+        return elements
 
     def ns(self, fullname):
         """Convert a SVG namespace prefix into a full namespace URI"""
         [ns, name] = fullname.split(':')
         namespace = self.NAMESPACES[ns]
         return f'{{{namespace}}}{name}'
-
-    def select(self, paths):
-        """Find elements by xpath and store against a key for later use"""
-        for key, path in paths.items():
-            try:
-                self.elements[key] = self.document.xpath(path, namespaces=self.NAMESPACES)[0]
-            except AttributeError:
-                pass
 
     def get(self, key):
         """Get a previously selected element by key"""
@@ -45,15 +47,14 @@ class Layout(SVG):
     """A map sheet layout"""
     def __init__(self, sheet):
         with resources.path(__package__, 'template.svg') as template_path:
-            super().__init__(str(template_path))
+            super().__init__(template_path, {
+                'image': '//svg:image[@id="map-data"]',
+                'title': '//svg:text[@id="map-title"]',
+                'border': '//svg:rect[@id="map-border"]',
+                'clip': '//svg:clipPath[@id="map-clip"]/svg:rect',
+            })
 
         self.sheet = sheet
-        self.select({
-            'image': '//svg:image[@id="map-data"]',
-            'title': '//svg:text[@id="map-title"]',
-            'border': '//svg:rect[@id="map-border"]',
-            'clip': '//svg:clipPath[@id="map-clip"]/svg:rect',
-        })
         self._size(sheet)
 
     def _size(self, sheet):
