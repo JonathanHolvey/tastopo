@@ -7,8 +7,8 @@ from .paper import Paper
 class Sheet(Paper):
     PRINT_DPI = 150
     IMAGE_BLEED = 2
-    MARGIN_BOTTOM = 18
-    MARGIN_SIDE = 4
+    FOOTER_HEIGHT = 15
+    MARGIN = 4
 
     def __init__(self, size, rotated=False):
         super().__init__(size)
@@ -29,10 +29,10 @@ class Sheet(Paper):
         bleed = self.IMAGE_BLEED if with_bleed else 0
         width, height = self.dimensions()
 
-        x = self.MARGIN_SIDE - bleed
+        x = self.MARGIN - bleed
         y = x
         width -= 2 * x
-        height -= x + self.MARGIN_BOTTOM - bleed
+        height -= x + self.MARGIN + self.FOOTER_HEIGHT - bleed
 
         return x, y, width, height
 

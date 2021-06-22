@@ -21,7 +21,7 @@ class SVG:
         for key, path in paths.items():
             try:
                 elements[key] = self.document.xpath(path, namespaces=self.NAMESPACES)[0]
-            except AttributeError:
+            except IndexError:
                 pass
         return elements
 
@@ -35,15 +35,29 @@ class SVG:
         """Get a previously selected element by key"""
         return self.elements[key]
 
-    def position(self, key, x, y, width, height):
+    def position(self, key, x, y, width=None, height=None):
         """Set the size and position of a SVG node"""
-        self.elements[key].attrib['x'] = str(x)
-        self.elements[key].attrib['y'] = str(y)
-        self.elements[key].attrib['width'] = str(width)
-        self.elements[key].attrib['height'] = str(height)
+        element = self.elements[key]
+        if element.tag == self.ns('svg:g'):
+            self._position_transform(element, x, y)
+        else:
+            self._position_absolute(element, x, y, width, height)
+
+    def _position_absolute(self, element, x, y, width, height):
+        """Set the positional attributes on an element"""
+        element.attrib['x'] = str(x)
+        element.attrib['y'] = str(y)
+        element.attrib['width'] = str(width)
+        element.attrib['height'] = str(height)
+
+    def _position_transform(self, element, x, y):
+        """Set the transform attribute on an element"""
+        element.attrib['transform'] = f'translate({x} {y})'
 
 
 class Layout(SVG):
+    ORIGINS = ['tl', 'tr', 'bl', 'br']
+
     """A map sheet layout"""
     def __init__(self, sheet):
         with resources.path(__package__, 'template.svg') as template_path:
@@ -52,6 +66,8 @@ class Layout(SVG):
                 'title': '//svg:text[@id="map-title"]',
                 'border': '//svg:rect[@id="map-border"]',
                 'clip': '//svg:clipPath[@id="map-clip"]/svg:rect',
+                'logos': '//svg:g[@id="footer-logos"]',
+                'info': '//svg:g[@id="footer-info"]',
             })
 
         self.sheet = sheet
@@ -61,6 +77,9 @@ class Layout(SVG):
         """Prepare the template for the sheet size in use"""
         root = self.document.getroot()
         width, height = sheet.dimensions()
+        margin = sheet.MARGIN
+        footer = sheet.FOOTER_HEIGHT
+
         root.attrib['width'] = f'{width}mm'
         root.attrib['height'] = f'{height}mm'
         root.attrib['viewBox'] = f'0 0 {width} {height}'
@@ -68,6 +87,8 @@ class Layout(SVG):
         self.position('image', *sheet.viewport(True))
         self.position('border', *sheet.viewport())
         self.position('clip', *sheet.viewport())
+        self.position('logos', width - margin - 73.5, height - footer - 1.5)
+        self.position('info', margin + 0.2, height - footer - 0.5)
 
     def compose(self, image, title):
         """Set the layout's variable elements"""
