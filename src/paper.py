@@ -1,9 +1,12 @@
 import math
+import re
 
 
 class Paper:
     """A piece of paper"""
     def __init__(self, spec):
+        if not re.match(r'^[aA]\d+$', spec):
+            raise ValueError(f"'{spec}' is not a valid ISO 216 A-series paper size")
         self.spec = spec
         self.series = spec[0]
         self.size = int(spec[1:])

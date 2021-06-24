@@ -1,4 +1,5 @@
 from importlib import resources
+import math
 
 from base64 import b64encode
 from lxml import etree
@@ -45,18 +46,31 @@ class SVG:
 
     def _position_absolute(self, element, x, y, width, height):
         """Set the positional attributes on an element"""
-        element.attrib['x'] = str(x)
-        element.attrib['y'] = str(y)
-        element.attrib['width'] = str(width)
-        element.attrib['height'] = str(height)
+        element.attrib.update({
+            'x': str(x),
+            'y': str(y),
+            'width': str(width),
+            'height': str(height),
+        })
 
     def _position_transform(self, element, x, y):
         """Set the transform attribute on an element"""
         element.attrib['transform'] = f'translate({x} {y})'
 
+    def line(self, parent_key, start, end):
+        """Add a line element with a start and end point"""
+        element = etree.SubElement(self.get(parent_key), 'line')
+        element.attrib.update({
+            'x1': str(start[0]),
+            'y1': str(start[1]),
+            'x2': str(end[0]),
+            'y2': str(end[1]),
+        })
+
 
 class Layout(SVG):
     ORIGINS = ['tl', 'tr', 'bl', 'br']
+    MIN_GRID_SPACING = 30
 
     """A map sheet layout"""
     def __init__(self, sheet):
@@ -66,6 +80,7 @@ class Layout(SVG):
                 'title': '//svg:text[@id="map-title"]',
                 'border': '//svg:rect[@id="map-border"]',
                 'clip': '//svg:clipPath[@id="map-clip"]/svg:rect',
+                'grid': '//svg:g[@id="map-grid"]',
                 'logos': '//svg:g[@id="footer-logos"]',
                 'info': '//svg:g[@id="footer-info"]',
             })
@@ -77,6 +92,7 @@ class Layout(SVG):
         """Prepare the template for the sheet size in use"""
         root = self.document.getroot()
         width, height = sheet.dimensions()
+        viewport = sheet.viewport()
         margin = sheet.MARGIN
         footer = sheet.FOOTER_HEIGHT
 
@@ -85,8 +101,9 @@ class Layout(SVG):
         root.attrib['viewBox'] = f'0 0 {width} {height}'
 
         self.position('image', *sheet.viewport(True))
-        self.position('border', *sheet.viewport())
-        self.position('clip', *sheet.viewport())
+        self.position('border', *viewport)
+        self.position('clip', *viewport)
+        self.position('grid', *viewport)
         self.position('logos', width - margin - 73.5, height - footer - 1.5)
         self.position('info', margin + 0.2, height - footer - 0.5)
 
@@ -95,3 +112,15 @@ class Layout(SVG):
         mapdata = 'data:image/png;base64,' + b64encode(image.mapdata).decode('utf-8')
         self.get('image').attrib[self.ns('xlink:href')] = mapdata
         self.get('title').text = title
+
+    def drawgrid(self, scale):
+        """Add a grid over the map image"""
+        width, height = self.sheet.viewport()[2:]
+        km_size = 1e6 / int(scale)
+        grid_size = math.ceil(max(self.MIN_GRID_SPACING, km_size) / km_size)
+        spacing = grid_size * km_size
+
+        for x in range(1, int(width / spacing) + 1):
+            self.line('grid', (x * spacing, 0), (x * spacing, height))
+        for y in range(1, int(height / spacing) + 1):
+            self.line('grid', (0, height - y * spacing), (width, height - y * spacing))        

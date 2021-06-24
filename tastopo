@@ -11,6 +11,7 @@ Options:
     --title <text>   - Set the title on the map sheet, instead of the location name
     --paper <size>   - Specify the paper size for printing [default: A4]
     --portrait       - Orientate the map in portrait, rather than landscape
+    --no-grid        - Disable the rendering of a scale grid on the map
     --format <type>  - The file format to export; either PDF or SVG [default: PDF]
 
 Map location
@@ -42,7 +43,7 @@ def export_map(svg, filetype):
         renderPDF.drawToFile(drawing, 'map.pdf')
         return
 
-    raise Exception(f'Format \'{filetype}\' not suppported')
+    raise ValueError(f'Format \'{filetype}\' not suppported')
 
 
 if __name__ == '__main__':
@@ -56,4 +57,7 @@ if __name__ == '__main__':
 
     layout = Layout(sheet)
     layout.compose(image, title)
+    if not args.get('--no-grid'):
+        layout.drawgrid(args.get('--scale'))
+
     export_map(layout.document.getroot(), args.get('--format'))

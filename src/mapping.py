@@ -5,6 +5,7 @@ from .paper import Paper
 
 
 class Sheet(Paper):
+    MIN_PAPER_SIZE = 6
     PRINT_DPI = 150
     IMAGE_BLEED = 2
     FOOTER_HEIGHT = 15
@@ -13,6 +14,8 @@ class Sheet(Paper):
     def __init__(self, size, rotated=False):
         super().__init__(size)
         self.rotated = rotated
+        if self.size > self.MIN_PAPER_SIZE:
+            raise ValueError(f'Paper size must not be smaller than A{self.MIN_PAPER_SIZE}')
 
     def dimensions(self):
         """Get the sheet dimensions; landscape by default"""
@@ -64,7 +67,7 @@ class Location():
             if place['value'].casefold() == placename.casefold():
                 return place['geometry']['x'], place['geometry']['y']
 
-        raise Exception(f'Location {self.description} not found')
+        raise ValueError(f'Location {self.description} not found')
 
     def _from_decimaldegrees(self, coordinates):
         """Look up a location from decimal degree coordinates"""
