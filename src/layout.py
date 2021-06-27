@@ -68,59 +68,82 @@ class SVG:
         })
 
 
-class Layout(SVG):
-    ORIGINS = ['tl', 'tr', 'bl', 'br']
+class Layout:
     MIN_GRID_SPACING = 30
+    INFO_ORDER = ['scale', 'grid', 'datum', 'centre', 'size', 'version']
 
     """A map sheet layout"""
-    def __init__(self, sheet):
+    def __init__(self, sheet, location, image, title=None):
+        self.sheet = sheet
+        self.location = location
+        self.image = image
+        self.title = title or location.description.title()
+        self.grid = False
+        self.details = {
+            'scale': f'1:{image.scale}',
+            'size': sheet.size,
+        }
+
+    def compose(self):
+        """Set the layout's variable elements"""
         with resources.path(__package__, 'template.svg') as template_path:
-            super().__init__(template_path, {
+            svg = SVG(template_path, {
                 'image': '//svg:image[@id="map-data"]',
                 'title': '//svg:text[@id="map-title"]',
                 'border': '//svg:rect[@id="map-border"]',
                 'clip': '//svg:clipPath[@id="map-clip"]/svg:rect',
                 'grid': '//svg:g[@id="map-grid"]',
                 'logos': '//svg:g[@id="footer-logos"]',
-                'info': '//svg:g[@id="footer-info"]',
+                'text': '//svg:g[@id="footer-text"]',
+                'info': '//svg:g[@id="map-info"]',
             })
 
-        self.sheet = sheet
-        self._size(sheet)
+        self._size(svg)
+        mapdata = 'data:image/png;base64,' + b64encode(self.image.mapdata).decode('utf-8')
+        svg.get('image').attrib[svg.ns('xlink:href')] = mapdata
+        svg.get('title').text = self.title
+        if self.grid:
+            self._drawgrid(svg)
 
-    def _size(self, sheet):
+        return svg.document.getroot()
+
+    def _size(self, svg):
         """Prepare the template for the sheet size in use"""
-        root = self.document.getroot()
-        width, height = sheet.dimensions()
-        viewport = sheet.viewport()
-        margin = sheet.MARGIN
-        footer = sheet.FOOTER_HEIGHT
+        root = svg.document.getroot()
+        width, height = self.sheet.dimensions()
+        viewport = self.sheet.viewport()
+        margin = self.sheet.MARGIN
+        footer = self.sheet.FOOTER_HEIGHT
 
         root.attrib['width'] = f'{width}mm'
         root.attrib['height'] = f'{height}mm'
         root.attrib['viewBox'] = f'0 0 {width} {height}'
 
-        self.position('image', *sheet.viewport(True))
-        self.position('border', *viewport)
-        self.position('clip', *viewport)
-        self.position('grid', *viewport)
-        self.position('logos', width - margin - 73.5, height - footer - 1.5)
-        self.position('info', margin + 0.2, height - footer - 0.5)
+        svg.position('image', *self.sheet.viewport(True))
+        svg.position('border', *viewport)
+        svg.position('clip', *viewport)
+        svg.position('grid', *viewport)
+        svg.position('logos', width - margin - 73.5, height - footer - 1.5)
+        svg.position('text', margin + 0.2, height - footer - 0.5)
 
-    def compose(self, image, title):
-        """Set the layout's variable elements"""
-        mapdata = 'data:image/png;base64,' + b64encode(image.mapdata).decode('utf-8')
-        self.get('image').attrib[self.ns('xlink:href')] = mapdata
-        self.get('title').text = title
-
-    def drawgrid(self, scale):
-        """Add a grid over the map image"""
+    def _drawgrid(self, svg):
+        """Add a grid to the map template"""
         width, height = self.sheet.viewport()[2:]
-        km_size = 1e6 / int(scale)
+        km_size = 1e6 / int(self.image.scale)
         grid_size = math.ceil(max(self.MIN_GRID_SPACING, km_size) / km_size)
         spacing = grid_size * km_size
 
         for x in range(1, int(width / spacing) + 1):
-            self.line('grid', (x * spacing, 0), (x * spacing, height))
+            svg.line('grid', (x * spacing, 0), (x * spacing, height))
         for y in range(1, int(height / spacing) + 1):
-            self.line('grid', (0, height - y * spacing), (width, height - y * spacing))        
+            svg.line('grid', (0, height - y * spacing), (width, height - y * spacing))        
+
+        self.details['grid'] = f'{grid_size}km'
+
+    def format_info(self):
+        """Format map info details"""
+        version = self.details.pop('version', None)
+        items = [f'{k.upper()} {v}' for k, v in self.details.items()]
+        if version:
+            items.append(f'TasTopo {version}')
+        return '    '.join(items)

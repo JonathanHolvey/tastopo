@@ -53,11 +53,9 @@ if __name__ == '__main__':
 
     sheet = mapping.Sheet(args.get('--paper'), args.get('--portrait'))
     image = mapping.Image(location, sheet, args.get('--scale'))
-    title = args.get('--title') or args.get('<location>').title()
 
-    layout = Layout(sheet)
-    layout.compose(image, title)
-    if not args.get('--no-grid'):
-        layout.drawgrid(args.get('--scale'))
+    layout = Layout(sheet, location, image, args.get('--title'))
+    layout.grid = not args.get('--no-grid')
+    svg = layout.compose()
 
-    export_map(layout.document.getroot(), args.get('--format'))
+    export_map(svg, args.get('--format'))

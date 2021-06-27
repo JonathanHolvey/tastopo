@@ -2,4 +2,4 @@ __pycache__
 *.pdf
 *.png
 *.svg
-!template.svg
+!src/template.svg
