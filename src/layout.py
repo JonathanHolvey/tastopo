@@ -70,7 +70,7 @@ class SVG:
 
 class Layout:
     MIN_GRID_SPACING = 30
-    INFO_ORDER = ['scale', 'grid', 'datum', 'centre', 'size', 'version']
+    INFO_ORDER = ['scale', 'grid', 'datum', 'centre', 'size']
 
     """A map sheet layout"""
     def __init__(self, sheet, location, image, title=None):
@@ -81,7 +81,9 @@ class Layout:
         self.grid = False
         self.details = {
             'scale': f'1:{image.scale}',
-            'size': sheet.size,
+            'datum': image.datum,
+            'centre': location.uri,
+            'size': sheet.spec.upper(),
         }
 
     def compose(self):
@@ -95,7 +97,7 @@ class Layout:
                 'grid': '//svg:g[@id="map-grid"]',
                 'logos': '//svg:g[@id="footer-logos"]',
                 'text': '//svg:g[@id="footer-text"]',
-                'info': '//svg:g[@id="map-info"]',
+                'info': '//svg:text[@id="map-info"]',
             })
 
         self._size(svg)
@@ -104,6 +106,7 @@ class Layout:
         svg.get('title').text = self.title
         if self.grid:
             self._drawgrid(svg)
+        svg.get('info').text = self.format_info()
 
         return svg.document.getroot()
 
@@ -123,7 +126,7 @@ class Layout:
         svg.position('border', *viewport)
         svg.position('clip', *viewport)
         svg.position('grid', *viewport)
-        svg.position('logos', width - margin - 73.5, height - footer - 1.5)
+        svg.position('logos', width - margin - 68, height - footer - 1.5)
         svg.position('text', margin + 0.2, height - footer - 0.5)
 
     def _drawgrid(self, svg):
@@ -142,8 +145,7 @@ class Layout:
 
     def format_info(self):
         """Format map info details"""
-        version = self.details.pop('version', None)
-        items = [f'{k.upper()} {v}' for k, v in self.details.items()]
-        if version:
-            items.append(f'TasTopo {version}')
+        items = [f'{k.upper()} {self.details[k]}' for k in self.INFO_ORDER if k in self.details]
+        if 'version' in self.details:
+            items.append(f'TasTopo {self.details["version"]}')
         return '    '.join(items)

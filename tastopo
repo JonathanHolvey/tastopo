@@ -30,6 +30,9 @@ from src import mapping
 from src.layout import Layout
 
 
+__version__ = '0.0.0'
+
+
 def export_map(svg, filetype):
     """Export a map document"""
     filetype = filetype.casefold()
@@ -47,7 +50,8 @@ def export_map(svg, filetype):
 
 
 if __name__ == '__main__':
-    args = docopt(__doc__)
+    version = f'v{__version__}'
+    args = docopt(__doc__, version=f'TasTopo {version}')
 
     location = mapping.Location(args.get('<location>'))
 
@@ -56,6 +60,7 @@ if __name__ == '__main__':
 
     layout = Layout(sheet, location, image, args.get('--title'))
     layout.grid = not args.get('--no-grid')
+    layout.details['version'] = version
     svg = layout.compose()
 
     export_map(svg, args.get('--format'))

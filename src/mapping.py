@@ -1,11 +1,12 @@
 import json
+import re
 
 from .api import ListAPI, cachedproperty
 from .paper import Paper
 
 
 class Sheet(Paper):
-    MIN_PAPER_SIZE = 6
+    MIN_PAPER_SIZE = 5
     PRINT_DPI = 150
     IMAGE_BLEED = 2
     FOOTER_HEIGHT = 15
@@ -52,7 +53,7 @@ class Location():
 
     @cachedproperty
     def coordinates(self):
-        if ':' in self.description and self.description.split(':')[0] == 'geo':
+        if self.description.startswith('geo:'):
             return self._from_decimaldegrees(self.description[4:])
         return self._from_placename(self.description)
 
@@ -79,6 +80,20 @@ class Location():
 
         return r.json()['coordinates'][0]
 
+    @cachedproperty
+    def uri(self):
+        """Get a geo URI for the location"""
+        r = self.api.get('Utilities/Geometry/GeometryServer/toGeoCoordinateString', params={
+            'sr': '3857',
+            'conversionType': 'DD',
+            'coordinates': json.dumps([self.coordinates]),
+        })
+
+        # Convert directional coordinates to absolute values
+        matches = re.findall(r'([-.\d]+)([NSEW])', r.json()['strings'][0])
+        coordinates = [v if d in 'NE' else f'-{v}' for v, d in matches]
+        return 'geo:{},{}'.format(*coordinates)
+
 
 class Image():
     """A ListMap map image"""
@@ -89,6 +104,7 @@ class Image():
         self.location = location
         self.sheet = sheet
         self.scale = scale
+        self.datum = 'GDA94 MGA55'
 
     @cachedproperty
     def mapdata(self):
