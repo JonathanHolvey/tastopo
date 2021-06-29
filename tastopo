@@ -5,14 +5,15 @@
 Usage: tastopo generate [options] <location>
 
 Options:
-    -h --help        - Show this help message
-    --version        - Show version information
-    --scale <ratio>  - Specify the scale of the printed map [default: 25000]
-    --title <text>   - Set the title on the map sheet, instead of the location name
-    --paper <size>   - Specify the paper size for printing [default: A4]
-    --portrait       - Orientate the map in portrait, rather than landscape
-    --no-grid        - Disable the rendering of a scale grid on the map
-    --format <type>  - The file format to export; either PDF or SVG [default: PDF]
+    -h --help         - Show this help message
+    --version         - Show version information
+    --scale <ratio>   - Specify the scale of the printed map [default: 25000]
+    --title <text>    - Set the title on the map sheet, instead of the location name
+    --paper <size>    - Specify the paper size for printing [default: A4]
+    --portrait        - Orientate the map in portrait, rather than landscape
+    --no-grid         - Disable the rendering of a scale grid on the map
+    --format <type>   - The file format to export; either PDF or SVG [default: PDF]
+    --out <filename>  - Override the default export file naming
 
 Map location
     The <location> argument is used to specify the centre of the map. This argument
@@ -25,6 +26,8 @@ from docopt import docopt
 from lxml import etree
 from svglib.svglib import SvgRenderer
 from reportlab.graphics import renderPDF
+import platform
+import re
 
 from src import mapping
 from src.layout import Layout
@@ -32,21 +35,37 @@ from src.layout import Layout
 
 __version__ = '0.0.0'
 
+INVALID_FILENAME_CHARS = {
+    'Linux': '/',
+    'Darwin': '/:',
+    'Windows': '\\:'
+}
 
-def export_map(svg, filetype):
+
+def clean_filename(filename):
+    """Remove invalid characters from a filename"""
+    invalid = INVALID_FILENAME_CHARS.get(platform.system(), INVALID_FILENAME_CHARS['Linux'])
+    return re.sub(r' +', ' ', ''.join(c for c in filename if c not in invalid))
+
+
+def export_map(svg, filetype, filename):
     """Export a map document"""
     filetype = filetype.casefold()
+    extension = '.' + filetype
+    if not filename.endswith(extension):
+        filename += extension
+
     if filetype == 'svg':
-        with open('map.svg', 'wb') as f:
+        with open(filename, 'wb') as f:
             f.write(etree.tostring(svg))
         return
     if filetype == 'pdf':
         renderer = SvgRenderer(None)
         drawing = renderer.render(svg)
-        renderPDF.drawToFile(drawing, 'map.pdf')
+        renderPDF.drawToFile(drawing, filename)
         return
 
-    raise ValueError(f'Format \'{filetype}\' not suppported')
+    raise ValueError(f"Format '{filetype}' not suppported")
 
 
 if __name__ == '__main__':
@@ -63,4 +82,5 @@ if __name__ == '__main__':
     layout.details['version'] = version
     svg = layout.compose()
 
-    export_map(svg, args.get('--format'))
+    filename = args.get('--out') or f'TasTopo - {clean_filename(layout.title)}'
+    export_map(svg, args.get('--format'), filename)

@@ -68,7 +68,7 @@ class Location():
             if place['value'].casefold() == placename.casefold():
                 return place['geometry']['x'], place['geometry']['y']
 
-        raise ValueError(f'Location {self.description} not found')
+        raise ValueError(f"Location '{self.description}' not found")
 
     def _from_decimaldegrees(self, coordinates):
         """Look up a location from decimal degree coordinates"""
