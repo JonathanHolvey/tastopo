@@ -22,65 +22,39 @@ Map location
     - 'geo:-43.643611,146.8275'
 """
 
-from docopt import docopt
-from lxml import etree
-from svglib.svglib import SvgRenderer
-from reportlab.graphics import renderPDF
-import platform
-import re
+from docopt import docopt, DocoptExit
 
 from src import mapping
 from src.layout import Layout
+from src.export import export_map, clean_filename
 
 
 __version__ = '0.0.0'
 
-INVALID_FILENAME_CHARS = {
-    'Linux': '/',
-    'Darwin': '/:',
-    'Windows': '\\:'
-}
-
-
-def clean_filename(filename):
-    """Remove invalid characters from a filename"""
-    invalid = INVALID_FILENAME_CHARS.get(platform.system(), INVALID_FILENAME_CHARS['Linux'])
-    return re.sub(r' +', ' ', ''.join(c for c in filename if c not in invalid))
-
-
-def export_map(svg, filetype, filename):
-    """Export a map document"""
-    filetype = filetype.casefold()
-    extension = '.' + filetype
-    if not filename.endswith(extension):
-        filename += extension
-
-    if filetype == 'svg':
-        with open(filename, 'wb') as f:
-            f.write(etree.tostring(svg))
-        return
-    if filetype == 'pdf':
-        renderer = SvgRenderer(None)
-        drawing = renderer.render(svg)
-        renderPDF.drawToFile(drawing, filename)
-        return
-
-    raise ValueError(f"Format '{filetype}' not suppported")
-
 
 if __name__ == '__main__':
     version = f'v{__version__}'
-    args = docopt(__doc__, version=f'TasTopo {version}')
+    try:
+        args = docopt(__doc__, version=f'TasTopo {version}', help=False)
+    except DocoptExit:
+        args = docopt(__doc__ + '\n    --debug')
 
-    location = mapping.Location(args.get('<location>'))
+    try:
+        location = mapping.Location(args.get('<location>'))
 
-    sheet = mapping.Sheet(args.get('--paper'), args.get('--portrait'))
-    image = mapping.Image(location, sheet, args.get('--scale'))
+        sheet = mapping.Sheet(args.get('--paper'), args.get('--portrait'))
+        image = mapping.Image(location, sheet, args.get('--scale'))
 
-    layout = Layout(sheet, location, image, args.get('--title'))
-    layout.grid = not args.get('--no-grid')
-    layout.details['version'] = version
-    svg = layout.compose()
+        layout = Layout(sheet, location, image, args.get('--title'))
+        layout.grid = not args.get('--no-grid')
+        layout.details['version'] = version
+        svg = layout.compose()
 
-    filename = args.get('--out') or f'TasTopo - {clean_filename(layout.title)}'
-    export_map(svg, args.get('--format'), filename)
+        filename = args.get('--out') or f'TasTopo - {clean_filename(layout.title)}'
+        export_map(svg, args.get('--format'), filename)
+
+    except Exception as error:
+        if args.get('--debug'):
+            raise
+        print(error)
+        exit(1)
