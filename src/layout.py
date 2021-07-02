@@ -116,7 +116,7 @@ class Layout:
         width, height = self.sheet.dimensions()
         viewport = self.sheet.viewport()
         margin = self.sheet.MARGIN
-        footer = self.sheet.FOOTER_HEIGHT
+        footer = self.sheet.FOOTER_HEIGHT + margin
 
         root.attrib['width'] = f'{width}mm'
         root.attrib['height'] = f'{height}mm'
@@ -126,8 +126,8 @@ class Layout:
         svg.position('border', *viewport)
         svg.position('clip', *viewport)
         svg.position('grid', *viewport)
-        svg.position('logos', width - margin - 68, height - footer - 1.5)
-        svg.position('text', margin + 0.2, height - footer - 0.5)
+        svg.position('logos', width - margin - 68, height - footer + 2.5)
+        svg.position('text', margin + 0.2, height - footer + 3.5)
 
     def _drawgrid(self, svg):
         """Add a grid to the map template"""

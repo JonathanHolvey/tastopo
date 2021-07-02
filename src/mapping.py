@@ -10,7 +10,7 @@ class Sheet(Paper):
     PRINT_DPI = 150
     IMAGE_BLEED = 2
     FOOTER_HEIGHT = 15
-    MARGIN = 4
+    MARGIN = 6
 
     def __init__(self, size, rotated=False):
         super().__init__(size)
