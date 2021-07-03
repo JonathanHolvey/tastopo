@@ -92,29 +92,35 @@ class Location():
 class Image():
     """A ListMap map image"""
     BASE_MAP = 'Topographic'
+    MAX_RESOLUTION = 4096
     IMAGE_DPI = 150
     ZOOM_FACTOR = 1.78117  # Maximise image resolution at 1:25000 scale
 
-    def __init__(self, location, sheet, scale):
+    def __init__(self, location, sheet, scale, zoom):
         self.api = ListAPI()
         self.location = location
         self.sheet = sheet
         self.scale = int(scale)
+        self.zoom = int(zoom)
         self.datum = 'GDA94 MGA55'
 
     @cachedproperty
     def mapdata(self):
-        scale = self.scale / self.ZOOM_FACTOR
-        width, height = [self.pixels(s) for s in self.sheet.imagesize()]
+        zoom = 2 ** self.zoom
+        scale = self.scale / self.ZOOM_FACTOR * zoom
+        width, height = [self.pixels(s / zoom) for s in self.sheet.imagesize()]
 
         return self.getlayer(self.BASE_MAP, scale, width, height)
 
     def pixels(self, size):
         """Convert a physical size in mm into pixels"""
-        return size * self.IMAGE_DPI * self.ZOOM_FACTOR / 25.4
+        return round(size * self.IMAGE_DPI * self.ZOOM_FACTOR / 25.4)
 
     def getlayer(self, name, scale, width, height):
         """Fetch a map layer image in PNG format"""
+        if width > self.MAX_RESOLUTION or height > self.MAX_RESOLUTION:
+            raise ValueError(f'Image dimensions exceed API limit of {self.MAX_RESOLUTION} pixels')
+
         r = self.api.get(f'Basemaps/{name}/MapServer/export', params={
             'f': 'image',
             'format': 'png',
