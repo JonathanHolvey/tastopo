@@ -69,8 +69,9 @@ class SVG:
 
 
 class Layout:
-    MIN_GRID_SPACING = 30
+    MAX_GRID_SPACING = 50
     INFO_ORDER = ['scale', 'grid', 'datum', 'centre', 'size']
+    GRID_SIZES = [200, 100, 50, 25, 10, 5, 4, 3, 2, 1, 0.5, 0.25, 0.1, 0.05, 0.025, 0.01]
 
     """A map sheet layout"""
     def __init__(self, sheet, location, image, title=None):
@@ -132,8 +133,7 @@ class Layout:
     def _drawgrid(self, svg):
         """Add a grid to the map template"""
         width, height = self.sheet.viewport()[2:]
-        km_size = 1e6 / int(self.image.scale)
-        grid_size = math.ceil(max(self.MIN_GRID_SPACING, km_size) / km_size)
+        grid_size, km_size = self._gridsize(max(width, height), self.image.scale)
         spacing = grid_size * km_size
 
         for x in range(1, int(width / spacing) + 1):
@@ -141,7 +141,16 @@ class Layout:
         for y in range(1, int(height / spacing) + 1):
             svg.line('grid', (0, height - y * spacing), (width, height - y * spacing))        
 
-        self.details['grid'] = f'{grid_size}km'
+        self.details['grid'] = (f'{grid_size}\u2009km' if grid_size >= 1
+                                else f'{grid_size * 1000:.0f}\u2009m')
+
+    def _gridsize(self, size, scale):
+        """Select the best grid size for the map scale"""
+        km = 1e6 / scale
+        for grid in self.GRID_SIZES:
+            if grid <= self.MAX_GRID_SPACING / km:
+                break
+        return grid, km
 
     def format_info(self):
         """Format map info details"""
