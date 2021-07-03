@@ -7,7 +7,6 @@ from .paper import Paper
 
 class Sheet(Paper):
     MIN_PAPER_SIZE = 5
-    PRINT_DPI = 150
     IMAGE_BLEED = 2
     FOOTER_HEIGHT = 15
     MARGIN = 6
@@ -24,9 +23,8 @@ class Sheet(Paper):
         return reversed(dimensions) if not self.rotated else dimensions
 
     def imagesize(self):
-        """Get the required map with and height in pixels"""
-        x, y, width, height = self.viewport(True)
-        return self.pixels(width), self.pixels(height)
+        """Get the required map with and height in mm"""
+        return self.viewport(True)[-2:]
 
     def viewport(self, with_bleed=False):
         """Get the position, width and height of the map view in mm"""
@@ -39,10 +37,6 @@ class Sheet(Paper):
         height -= x + self.MARGIN + self.FOOTER_HEIGHT - bleed
 
         return x, y, width, height
-
-    def pixels(self, size):
-        """Convert a physical size in mm into pixels"""
-        return size * self.PRINT_DPI / 25.4
 
 
 class Location():
@@ -98,26 +92,35 @@ class Location():
 class Image():
     """A ListMap map image"""
     BASE_MAP = 'Topographic'
+    IMAGE_DPI = 150
+    ZOOM_FACTOR = 1.78117  # Maximise image resolution at 1:25000 scale
 
     def __init__(self, location, sheet, scale):
         self.api = ListAPI()
         self.location = location
         self.sheet = sheet
-        self.scale = scale
+        self.scale = int(scale)
         self.datum = 'GDA94 MGA55'
 
     @cachedproperty
     def mapdata(self):
-        return self._maplayer(self.BASE_MAP)
+        scale = self.scale / self.ZOOM_FACTOR
+        width, height = [self.pixels(s) for s in self.sheet.imagesize()]
 
-    def _maplayer(self, name):
+        return self.getlayer(self.BASE_MAP, scale, width, height)
+
+    def pixels(self, size):
+        """Convert a physical size in mm into pixels"""
+        return size * self.IMAGE_DPI * self.ZOOM_FACTOR / 25.4
+
+    def getlayer(self, name, scale, width, height):
         """Fetch a map layer image in PNG format"""
         r = self.api.get(f'Basemaps/{name}/MapServer/export', params={
             'f': 'image',
             'format': 'png',
             'bbox': '{0},{1},{0},{1}'.format(*self.location.coordinates),
-            'mapScale': self.scale,
-            'size': '{},{}'.format(*self.sheet.imagesize()),
-            'dpi': self.sheet.PRINT_DPI,
+            'mapScale': scale,
+            'size': f'{width},{height}',
+            'dpi': self.IMAGE_DPI,
         })
         return r.content
