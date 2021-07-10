@@ -25,7 +25,8 @@ Map location
 
 from docopt import docopt, DocoptExit
 
-from src import mapping
+from src import listmap
+from src.map import Sheet, Image
 from src.layout import Layout
 from src.export import export_map, clean_filename
 
@@ -41,10 +42,10 @@ if __name__ == '__main__':
         args = docopt(__doc__ + '\n    --debug')
 
     try:
-        location = mapping.Location(args.get('<location>'))
+        location = listmap.Location(args.get('<location>'))
 
-        sheet = mapping.Sheet(args.get('--paper'), args.get('--portrait'))
-        image = mapping.Image(location, sheet, args.get('--scale'), args.get('--zoom'))
+        sheet = Sheet(args.get('--paper'), args.get('--portrait'))
+        image = Image(location, sheet, args.get('--scale'), args.get('--zoom'))
 
         layout = Layout(sheet, location, image, args.get('--title'))
         layout.grid = not args.get('--no-grid')

@@ -9,6 +9,7 @@ requests = "*"
 svglib = "*"
 lxml = "*"
 reportlab = "*"
+pillow = "*"
 
 [dev-packages]
 
