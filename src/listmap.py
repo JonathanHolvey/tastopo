@@ -4,6 +4,8 @@ from urllib.parse import urljoin
 import re
 import json
 import math
+import threading
+from queue import Queue
 
 from . import image
 
@@ -106,17 +108,34 @@ class MapData:
 
 
 class TiledData(MapData):
-    TILE_SIZE = 500
+    TILE_SIZE = 1024
+    MAX_THREADS = 8
 
     def getlayer(self, name):
         """Fetch and combine all tiles"""
+        queue = Queue()
         columns, rows = self.shape()
-        tiles = []
+        tiles = [None] * (columns * rows)
+        index = 0
         for row in reversed(range(rows)):
             for column in range(columns):
-                tiles.append(self._fetch(name, **self.tileparams(column, row)))
+                queue.put((index, name, column, row, tiles))
+                index += 1
 
+        for _ in range(min(self.MAX_THREADS, len(tiles))):
+            worker = threading.Thread(target=self._job, args=(queue,))
+            worker.start()
+
+        queue.join()
         return image.stitch(tiles, self.size)
+
+    def _job(self, queue):
+        """Consume a single tile-fetching job from the queue"""
+        while not queue.empty():
+            index, name, column, row, tiles = queue.get()
+            tile = self._fetch(name, **self.tileparams(column, row))
+            tiles[index] = tile
+            queue.task_done()
 
     def shape(self):
         """Get the number of columns and rows in the tile grid"""
