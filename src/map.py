@@ -3,6 +3,7 @@ import math
 
 from .listmap import TiledData
 from .paper import Paper
+from . import image
 
 
 class Sheet(Paper):
@@ -41,7 +42,8 @@ class Sheet(Paper):
 
 class Image():
     """A ListMap map image"""
-    BASE_MAP = 'Topographic'
+    BASEMAP = 'Topographic'
+    SHADING = 'HillshadeGrey'
     MIN_DPI = 267.17615604
     LOD_BOUNDARY = 0.3
 
@@ -67,7 +69,10 @@ class Image():
         size = [self.pixels(d / zoom) for d in self.sheet.imagesize()]
 
         layers = TiledData(scale, self.dpi, self.location.coordinates, size)
-        return layers.getlayer(self.BASE_MAP)
+        basemap = layers.getlayer(self.BASEMAP)
+        shading = layers.getlayer(self.SHADING)
+
+        return image.layer(basemap, (shading, 0.15))
 
     def pixels(self, size):
         """Convert a physical size in mm into pixels"""

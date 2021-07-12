@@ -15,7 +15,7 @@ def tobytes(image):
 
 
 def stitch(tiles, size):
-    """Join an array image tiles into a single image"""
+    """Join an array of image tiles into a single image"""
     result = Image.new('RGB', size)
 
     x = 0
@@ -27,5 +27,15 @@ def stitch(tiles, size):
         if x >= size[0]:
             x = 0
             y += tileimage.height
+
+    return tobytes(result)
+
+
+def layer(*args):
+    """Merge multiple image layers together"""
+    result = frombytes(args[0])
+
+    for image, opacity in args[1:]:
+        result = Image.blend(result, frombytes(image), alpha=opacity)
 
     return tobytes(result)
