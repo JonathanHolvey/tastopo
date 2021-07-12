@@ -1,4 +1,5 @@
 from functools import cached_property
+import math
 
 from .listmap import TiledData
 from .paper import Paper
@@ -41,26 +42,33 @@ class Sheet(Paper):
 class Image():
     """A ListMap map image"""
     BASE_MAP = 'Topographic'
-    RES_FACTOR = 1.78117  # Maximise image resolution at 1:25000 scale
-    IMAGE_DPI = 150
+    MIN_DPI = 267.17615604
+    LOD_BOUNDARY = 0.3
 
     def __init__(self, location, sheet, scale, zoom):
         self.location = location
         self.sheet = sheet
         self.scale = int(scale)
-        self.zoom = int(zoom)
         self.datum = 'GDA94 MGA55'
+
+        # Find the position of the current scale between adjacent scale halvings
+        scale_factor = 2 ** (math.log(self.scale / 100000, 2) % 1)
+
+        # Calculate the highest possible DPI for the current scale
+        self.dpi = self.MIN_DPI * scale_factor
+        # Adjust the point between adjacent scale halvings where the level of detail changes
+        self.zoom = int(zoom) + (1 if scale_factor - 1 > self.LOD_BOUNDARY else 0)
 
     @cached_property
     def mapdata(self):
-        """Get a map image at the optimum resolution for the selected scale and size"""
+        """Get a map image at the optimum resolution for the selected scale"""
         zoom = 2 ** self.zoom
-        scale = self.scale / self.RES_FACTOR * zoom
-        size = [self.pixels(d * self.RES_FACTOR / zoom) for d in self.sheet.imagesize()]
+        scale = self.scale * zoom
+        size = [self.pixels(d / zoom) for d in self.sheet.imagesize()]
 
-        layers = TiledData(scale, self.IMAGE_DPI, self.location.coordinates, size)
+        layers = TiledData(scale, self.dpi, self.location.coordinates, size)
         return layers.getlayer(self.BASE_MAP)
 
     def pixels(self, size):
         """Convert a physical size in mm into pixels"""
-        return round(size * self.IMAGE_DPI / 25.4)
+        return round(size * self.dpi / 25.4)
