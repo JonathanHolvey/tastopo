@@ -27,7 +27,7 @@ class ListAPI(requests.Session):
 
 
 class Location():
-    """Find the coordinates of a map location"""
+    """A location on the map"""
     def __init__(self, description):
         self.api = ListAPI()
         self.description = description
@@ -76,83 +76,147 @@ class Location():
         return 'geo:{},{}'.format(*coordinates)
 
 
-class MapData:
-    """Get map data for a certain area"""
-    MAX_RESOLUTION = 4098
-
-    def __init__(self, scale, dpi, centre, size):
+class Layer:
+    """Image tile metadata for a map layer"""
+    def __init__(self, name):
         self.api = ListAPI()
-        self.scale = scale
-        self.dpi = dpi
+        self.name = name
+
+    @cached_property
+    def properties(self):
+        """Fetch layer properties from the API"""
+        r = self.api.get(f'Basemaps/{self.name}/MapServer')
+        return r.json()
+
+    @property
+    def origin(self):
+        """Get the coordinates of the first tile"""
+        point = self.properties['tileInfo']['origin']
+        return point['x'], point['y']
+
+    @property
+    def tilesize(self):
+        """Get the pixel size of a single tile"""
+        return self.properties['tileInfo']['rows']
+
+    def resolution(self, level):
+        """Get the tile resolution for a certain level of detail"""
+        return self.properties['tileInfo']['lods'][level]['resolution']
+
+
+class TileGrid:
+    def __init__(self, layer, level, centre, size):
+        self.layer = layer
+        self.level = level
+        self.centre = centre
+        self.size = size
+
+    def tiles(self):
+        """Get a list of tile coordinates to cover a real-world map area"""
+        start, shape = self.grid()
+        return [(start[0] + col, start[1] + row)
+                for row in range(shape[1], 0, -1) for col in range(shape[0])]
+
+    def grid(self):
+        """Get the start tile and shape of a grid of tiles"""
+        x1, y1 = self.bbox()[:2]
+        overflow = self.overflow()
+
+        start = math.floor(self.tileunits(x1)), math.floor(self.tileunits(y1))
+        shape = (
+            round(self.tileunits(self.size[0]) + sum(overflow[0])),
+            round(self.tileunits(self.size[1]) + sum(overflow[1])),
+        )
+
+        return start, shape
+
+    def bbox(self):
+        """Get the coordinates of the corners bounding the map area"""
+        x1 = self.centre[0] - self.layer.origin[0] - self.size[0] / 2
+        x2 = self.centre[0] - self.layer.origin[0] + self.size[0] / 2
+        y1 = self.centre[1] - self.layer.origin[1] - self.size[1] / 2
+        y2 = self.centre[1] - self.layer.origin[1] + self.size[1] / 2
+        return x1, y1, x2, y2
+
+    def tileunits(self, size):
+        """Convert a real-world distance in metres to a number of tile widths"""
+        resolution = self.layer.resolution(self.level)
+        return size / (resolution * self.layer.tilesize)
+
+    def pixelsize(self):
+        """Get the grid dimensions in pixels"""
+        resolution = self.layer.resolution(self.level)
+        return [round(s / resolution) for s in self.size]
+
+    def overflow(self):
+        """Get the proportion of a tile that the grid extends beyond the map area by on each side"""
+        x1, y1, x2, y2 = self.bbox()
+
+        left = self.tileunits(x1) % 1
+        bottom = self.tileunits(y1) % 1
+        top = 1 - self.tileunits(y2) % 1
+        right = 1 - self.tileunits(x2) % 1
+        return (left, right), (top, bottom)
+
+    def origin(self):
+        """Get the position of the first tile in pixels"""
+        overflow = self.overflow()
+
+        left = -1 * round(overflow[0][0] * self.layer.tilesize)
+        top = -1 * round(overflow[1][0] * self.layer.tilesize)
+        return left, top
+
+
+class Tile:
+    """A tile from the map service"""
+    def __init__(self, grid, layer, position):
+        self.api = ListAPI()
+        self.grid = grid
+        self.layer = layer
+        self.position = position
+
+    def fetch(self):
+        """Fetch the image data"""
+        col, row = [abs(p) for p in self.position]
+        r = self.api.get(f'Basemaps/{self.layer.name}/MapServer/tile/{self.grid.level}/{row}/{col}')
+        self.type = r.headers['Content-Type']
+        self.data = r.content
+
+    def __bytes__(self):
+        """Cast to bytes"""
+        return self.data
+
+
+class MapData:
+    """A composite image built from multiple tiles"""
+    MAX_THREADS = 8
+
+    def __init__(self, level, centre, size):
+        self.level = level
         self.centre = centre
         self.size = size
 
     def getlayer(self, name):
-        """Fetch an image for a layer"""
-        return self._fetch(name, self.centre, self.size)
-
-    def _fetch(self, name, centre, size):
-        """Fetch an image for a specified layer, centre and size"""
-        if any(d > self.MAX_RESOLUTION for d in size):
-            raise ValueError(f'Image dimensions exceed API limit of {self.MAX_RESOLUTION} pixels')
-
-        r = self.api.get(f'Basemaps/{name}/MapServer/export', params={
-            'f': 'image',
-            'format': 'png24',
-            'bbox': '{0},{1},{0},{1}'.format(*centre),
-            'mapScale': self.scale,
-            'size': '{},{}'.format(*size),
-            'dpi': self.dpi,
-        })
-        return r.content
-
-
-class TiledData(MapData):
-    TILE_SIZE = 1024
-    MAX_THREADS = 8
-
-    def getlayer(self, name):
         """Fetch and combine all tiles"""
+        layer = Layer(name)
+        grid = TileGrid(layer, self.level, self.centre, self.size)
         queue = Queue()
-        columns, rows = self.shape()
-        tiles = [None] * (columns * rows)
-        index = 0
-        for row in reversed(range(rows)):
-            for column in range(columns):
-                queue.put((index, name, column, row, tiles))
-                index += 1
+
+        tilelist = grid.tiles()
+        tiles = [Tile(grid, layer, position) for position in tilelist]
+        for tile in tiles:
+            queue.put(tile)
 
         for _ in range(min(self.MAX_THREADS, len(tiles))):
             worker = threading.Thread(target=self._job, args=(queue,))
             worker.start()
 
         queue.join()
-        return image.stitch(tiles, self.size)
+        return image.stitch(tiles, grid.pixelsize(), grid.origin())
 
     def _job(self, queue):
         """Consume a single tile-fetching job from the queue"""
         while not queue.empty():
-            index, name, column, row, tiles = queue.get()
-            tile = self._fetch(name, **self.tileparams(column, row))
-            tiles[index] = tile
+            tile = queue.get()
+            tile.fetch()
             queue.task_done()
-
-    def shape(self):
-        """Get the number of columns and rows in the tile grid"""
-        return [math.ceil(d / self.TILE_SIZE) for d in self.size]
-
-    def metres(self, pixels):
-        """Convert a pixel size into a real-world size in metres"""
-        return self.scale * pixels / (self.dpi * 1000/25.4)
-
-    def tileparams(self, column, row):
-        """Calculate the pixel size and coordinate centre of a tile"""
-        imagewidth, imageheight = self.size
-        image_x, image_y = self.centre
-
-        width = min(imagewidth, self.TILE_SIZE * (column + 1)) - self.TILE_SIZE * column
-        height = min(imageheight, self.TILE_SIZE * (row + 1)) - self.TILE_SIZE * row
-        x = image_x + self.metres(imagewidth / -2 + self.TILE_SIZE * column + width / 2)
-        y = image_y + self.metres(imageheight / -2 + self.TILE_SIZE * row + height / 2)
-
-        return {'centre': (x, y), 'size': (width, height)}

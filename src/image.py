@@ -4,7 +4,7 @@ import io
 
 def frombytes(data):
     """Create an image object from a PNG byte array"""
-    return Image.open(io.BytesIO(data))
+    return Image.open(io.BytesIO(bytes(data)))
 
 
 def tobytes(image):
@@ -14,7 +14,7 @@ def tobytes(image):
     return data.getvalue()
 
 
-def stitch(tiles, size):
+def stitch(tiles, size, start=(0, 0)):
     """Join an array of image tiles into a single image"""
     result = Image.new('RGB', size)
 
@@ -22,20 +22,21 @@ def stitch(tiles, size):
     y = 0
     for index, tile in enumerate(tiles):
         tileimage = frombytes(tile)
-        result.paste(tileimage, (x, y))
+        result.paste(tileimage, (x + start[0], y + start[1]))
         x += tileimage.width
-        if x >= size[0]:
+        if x >= size[0] - start[0]:
             x = 0
             y += tileimage.height
 
     return tobytes(result)
 
 
-def layer(*args):
+def layer(background, *layers):
     """Merge multiple image layers together"""
-    result = frombytes(args[0])
+    result = frombytes(background)
 
-    for image, opacity in args[1:]:
-        result = Image.blend(result, frombytes(image), alpha=opacity)
+    for image, opacity in layers:
+        image = frombytes(image)
+        result = Image.blend(result, image, alpha=opacity)
 
     return tobytes(result)

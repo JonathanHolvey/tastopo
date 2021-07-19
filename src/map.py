@@ -1,7 +1,7 @@
 from functools import cached_property
 import math
 
-from .listmap import TiledData
+from .listmap import MapData
 from .paper import Paper
 from . import image
 
@@ -64,16 +64,15 @@ class Image():
     @cached_property
     def mapdata(self):
         """Get a map image at the optimum resolution for the selected scale"""
-        zoom = 2 ** self.zoom
-        scale = self.scale * zoom
-        size = [self.pixels(d / zoom) for d in self.sheet.imagesize()]
+        size = [self.metres(d) for d in self.sheet.imagesize()]
 
-        layers = TiledData(scale, self.dpi, self.location.coordinates, size)
-        basemap = layers.getlayer(self.BASEMAP)
-        shading = layers.getlayer(self.SHADING)
+        # TODO: Calculate level of detail dynamically
+        mapdata = MapData(16, self.location.coordinates, size)
+        basemap = mapdata.getlayer(self.BASEMAP)
+        shading = mapdata.getlayer(self.SHADING)
 
         return image.layer(basemap, (shading, 0.15))
 
-    def pixels(self, size):
-        """Convert a physical size in mm into pixels"""
-        return round(size * self.dpi / 25.4)
+    def metres(self, size):
+        """Convert a map dimension in mm to a real-world size in metres"""
+        return self.scale * size / 1000
