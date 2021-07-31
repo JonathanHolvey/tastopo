@@ -59,9 +59,9 @@ class Image():
         """Get a map image"""
         size = [self.metres(d) for d in self.sheet.imagesize()]
 
-        mapdata = MapData(self.level, self.location.coordinates, size)
-        basemap = mapdata.getlayer(self.BASEMAP)
-        shading = mapdata.getlayer(self.SHADING)
+        mapdata = MapData(self.location.coordinates, size)
+        basemap = mapdata.getlayer(self.BASEMAP, self.level)
+        shading = mapdata.getlayer(self.SHADING, self.level - 2)
 
         return image.layer(basemap, (shading, 0.15))
 

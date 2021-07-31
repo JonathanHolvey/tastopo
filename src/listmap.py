@@ -191,15 +191,14 @@ class MapData:
     """A composite image built from multiple tiles"""
     MAX_THREADS = 8
 
-    def __init__(self, level, centre, size):
-        self.level = level
+    def __init__(self, centre, size):
         self.centre = centre
         self.size = size
 
-    def getlayer(self, name):
+    def getlayer(self, name, level):
         """Fetch and combine all tiles"""
         layer = Layer(name)
-        grid = TileGrid(layer, self.level, self.centre, self.size)
+        grid = TileGrid(layer, level, self.centre, self.size)
         queue = Queue()
 
         tilelist = grid.tiles()

@@ -37,6 +37,7 @@ def layer(background, *layers):
 
     for image, opacity in layers:
         image = frombytes(image)
+        image = image.resize(result.size, Image.BILINEAR)
         result = Image.blend(result, image, alpha=opacity)
 
     return tobytes(result)
