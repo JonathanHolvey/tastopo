@@ -1,8 +1,11 @@
 from functools import cached_property
 import math
+import threading
+from queue import Queue
 
-from .listmap import MapData
-from .paper import Paper
+from .dimensions import Paper
+from .dimensions import TileGrid
+from .listmap import Layer, Tile
 from . import image
 
 
@@ -78,3 +81,37 @@ class Image():
     def metres(self, size):
         """Convert a map dimension in mm to a real-world size in metres"""
         return self.scale * size / 1000
+
+
+class MapData:
+    """A composite image built from multiple tiles"""
+    MAX_THREADS = 8
+
+    def __init__(self, centre, size):
+        self.centre = centre
+        self.size = size
+
+    def getlayer(self, name, level):
+        """Fetch and combine all tiles"""
+        layer = Layer(name)
+        grid = TileGrid(layer, level, self.centre, self.size)
+        queue = Queue()
+
+        tilelist = grid.tiles()
+        tiles = [Tile(grid, layer, position) for position in tilelist]
+        for tile in tiles:
+            queue.put(tile)
+
+        for _ in range(min(self.MAX_THREADS, len(tiles))):
+            worker = threading.Thread(target=self._job, args=(queue,))
+            worker.start()
+
+        queue.join()
+        return image.stitch(tiles, grid.pixelsize(), grid.origin())
+
+    def _job(self, queue):
+        """Consume a single tile-fetching job from the queue"""
+        while not queue.empty():
+            tile = queue.get()
+            tile.fetch()
+            queue.task_done()
