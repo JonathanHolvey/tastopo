@@ -37,7 +37,7 @@ __version__ = '0.0.0'
 if __name__ == '__main__':
     version = f'v{__version__}'
     try:
-        args = docopt(__doc__, version=f'TasTopo {version}', help=False)
+        args = docopt(__doc__, version=f'TasTopo {version}')
     except DocoptExit:
         args = docopt(__doc__ + '\n    --debug')
 
