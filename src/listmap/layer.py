@@ -28,6 +28,7 @@ class Layer:
 
     def resolution(self, level):
         """Get the tile resolution for a certain level of detail"""
+        level = min(level, len(self.properties['tileInfo']['lods']) - 1)
         return self.properties['tileInfo']['lods'][level]['resolution']
 
 

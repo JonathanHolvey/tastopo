@@ -47,8 +47,8 @@ class Image():
     """A ListMap map image"""
     BASEMAP = 'Topographic'
     SHADING = 'HillshadeGrey'
-    LOD_BOUNDARY = 0.3
-    LEVEL_SHIFT = 13
+    LOD_BOUNDARY = 0.6
+    BASE_LOD = 12
 
     def __init__(self, location, sheet, scale, zoom):
         self.location = location
@@ -66,17 +66,17 @@ class Image():
         basemap = mapdata.getlayer(self.BASEMAP, self.level)
         shading = mapdata.getlayer(self.SHADING, self.level - 2)
 
-        return image.layer(basemap, (shading, 0.15))
+        return image.layer(basemap, (shading, 0.12))
 
     @property
     def level(self):
         """Calculate the level of detail for the selected scale"""
-        level = math.log((self.scale + 1) / 100000, 2)
+        level = math.log((self.scale - 1) / 100000, 2)
         # Find the position of the current scale between adjacent scale halvings
         scale_factor = (2 ** (level % 1)) % 1
         # Adjust the point between adjacent scale halvings where the level of detail changes
         zoom = round(0.5 + self.LOD_BOUNDARY - scale_factor) - self.zoom
-        return self.LEVEL_SHIFT - math.floor(level) + zoom
+        return max(0, self.BASE_LOD - math.floor(level) + zoom)
 
     def metres(self, size):
         """Convert a map dimension in mm to a real-world size in metres"""
