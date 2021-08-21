@@ -25,10 +25,10 @@ Map location
 
 from docopt import docopt, DocoptExit
 
-from src import listmap
-from src.map import Sheet, Image
-from src.layout import Layout
-from src.export import export_map, clean_filename
+try:
+    from src import tastopo
+except ModuleNotFoundError:
+    import tastopo
 
 
 __version__ = '0.0.0'
@@ -42,18 +42,18 @@ if __name__ == '__main__':
         args = docopt(__doc__ + '\n    --debug')
 
     try:
-        location = listmap.Location(args.get('<location>'))
+        location = tastopo.Location(args.get('<location>'))
 
-        sheet = Sheet(args.get('--paper'), args.get('--portrait'))
-        image = Image(location, sheet, args.get('--scale'), args.get('--zoom'))
+        sheet = tastopo.Sheet(args.get('--paper'), args.get('--portrait'))
+        image = tastopo.Image(location, sheet, args.get('--scale'), args.get('--zoom'))
 
-        layout = Layout(sheet, location, image, args.get('--title'))
+        layout = tastopo.Layout(sheet, location, image, args.get('--title'))
         layout.grid = not args.get('--no-grid')
         layout.details['version'] = version
         svg = layout.compose()
 
-        filename = args.get('--out') or f'TasTopo - {clean_filename(layout.title)}'
-        export_map(svg, args.get('--format'), filename)
+        filename = args.get('--out') or f'TasTopo - {tastopo.clean_filename(layout.title)}'
+        tastopo.export_map(svg, args.get('--format'), filename)
 
     except Exception as error:
         if args.get('--debug'):

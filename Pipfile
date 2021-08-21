@@ -4,15 +4,18 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-docopt = "*"
-requests = "*"
-svglib = "*"
-lxml = "*"
-reportlab = "*"
-pillow = "*"
+docopt = "~=0.6"
+requests = "~=2.26"
+svglib = "~=1.1"
+lxml = "~=4.6"
+reportlab = "~=3.5"
+pillow = "~=8.3"
 
 [dev-packages]
 pipenv-setup = "*"
 
 [requires]
 python_version = "3.9"
+
+[scripts]
+sync = "pipenv-setup sync --pipfile"
