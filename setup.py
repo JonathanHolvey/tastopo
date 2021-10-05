@@ -17,7 +17,7 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 
 setup(
     name='tastopo',
-    version='0.0.0',
+    version='1.0.0',
     description='Generate printable topographic maps for anywhere in Tasmania',
     long_description=abs_urls(long_description),
     long_description_content_type='text/markdown',
