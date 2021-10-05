@@ -18,6 +18,14 @@ TasTopo is a command-line tool that provides an alternative way to create printa
 - SVG and PDF export formats
 - Enhanced hillshade overlay
 
+## Installation
+
+TasTopo requires Python 3 and can be installed using Pip:
+
+```bash
+python3 -m pip install tastopo
+```
+
 ## Usage
 
 ```
