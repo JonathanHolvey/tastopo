@@ -35,6 +35,11 @@ class SVG:
         """Get a previously selected element by key"""
         return self.elements[key]
 
+    def remove(self, key):
+        """Remove a selected element from the document"""
+        element = self.get(key)
+        element.getparent().remove(element)
+
     def position(self, key, x, y, width=None, height=None):
         """Set the size and position of a SVG node"""
         element = self.elements[key]
@@ -69,7 +74,7 @@ class SVG:
 
 class Layout:
     MAX_GRID_SPACING = 50
-    INFO_ORDER = ['scale', 'grid', 'datum', 'centre', 'size']
+    INFO_ORDER = ['scale', 'grid', 'datum', 'declination', 'centre', 'size']
     GRID_SIZES = [200, 100, 50, 25, 10, 5, 4, 3, 2, 1, 0.5, 0.25, 0.1, 0.05, 0.025, 0.01]
 
     """A map sheet layout"""
@@ -84,6 +89,7 @@ class Layout:
             'datum': image.datum,
             'centre': location.uri,
             'size': sheet.spec.upper(),
+            'declination': '{:+.1f}°'.format(self.location.declination)
         }
 
     def compose(self):
@@ -92,12 +98,12 @@ class Layout:
             svg = SVG(template_path, {
                 'image': '//svg:image[@id="map-data"]',
                 'title': '//svg:text[@id="map-title"]',
+                'info': '//svg:text[@id="map-info"]',
                 'border': '//svg:rect[@id="map-border"]',
                 'clip': '//svg:clipPath[@id="map-clip"]/svg:rect',
                 'grid': '//svg:g[@id="map-grid"]',
                 'logos': '//svg:g[@id="footer-logos"]',
                 'text': '//svg:g[@id="footer-text"]',
-                'info': '//svg:text[@id="map-info"]',
             })
 
         self._size(svg)
