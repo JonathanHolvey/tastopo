@@ -88,7 +88,7 @@ class Layout:
 
     def compose(self):
         """Set the layout's variable elements"""
-        with resources.path(__package__, 'template.svg') as template_path:
+        with resources.path(__package__ + '.templates', 'default.svg') as template_path:
             svg = SVG(template_path, {
                 'image': '//svg:image[@id="map-data"]',
                 'title': '//svg:text[@id="map-title"]',

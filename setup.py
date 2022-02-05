@@ -37,7 +37,7 @@ setup(
     ],
     packages=find_packages("./src"),
     package_dir={'': './src'},
-    package_data={'': ['template.svg']},
+    package_data={'': ['templates/default.svg']},
     python_requires='>=3.6, <4',
     # This is generated automatically. Run `pipenv run sync` to update
     install_requires=[
