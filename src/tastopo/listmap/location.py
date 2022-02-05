@@ -7,15 +7,19 @@ from .api import listapi
 
 class Location():
     """A location on the map"""
-    def __init__(self, description):
+    def __init__(self, description, translate=(0, 0)):
         self.api = listapi
         self.description = description
+        self.translate = translate
 
     @cached_property
     def coordinates(self):
         if self.description.startswith('geo:'):
-            return self._from_decimaldegrees(self.description[4:])
-        return self._from_placename(self.description)
+            coord = self._from_decimaldegrees(self.description[4:])
+        else:
+            coord = self._from_placename(self.description)
+
+        return [sum(i) for i in zip(coord, self.translate)]
 
     def _from_placename(self, placename):
         """Look up a location from a place name"""
