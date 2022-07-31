@@ -7,7 +7,6 @@ name = "pypi"
 docopt = "~=0.6"
 requests = "~=2.26"
 svglib = "~=1.1"
-lxml = "~=4.6"
 reportlab = "~=3.5"
 pillow = "~=8.3"
 
@@ -18,4 +17,4 @@ pipenv-setup = "*"
 python_version = "3.9"
 
 [scripts]
-sync = "pipenv-setup sync --pipfile"
+setup-sync = "pipenv-setup sync --pipfile"
