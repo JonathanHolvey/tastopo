@@ -3,10 +3,16 @@ import re
 import json
 
 from .api import listapi, magapi
+from .geometry import centroid
 
 
 class Location():
     """A location on the map"""
+    GEOMETRIES = {
+        'point': 'esriGeometryPoint',
+        'polygon': 'esriGeometryPolygon',
+    }
+
     def __init__(self, description, translate=(0, 0)):
         self.description = description
         self.translate = translate
@@ -23,14 +29,17 @@ class Location():
 
     def _from_placename(self, placename):
         """Look up a location from a place name"""
-        r = listapi.get('Public/PlacenamePoints/MapServer/find', params={
+        r = listapi.get('Public/SearchService/MapServer/find', params={
             'searchText': placename,
             'layers': '0',
         })
 
         for place in r.json()['results']:
             if place['value'].casefold() == placename.casefold():
-                return place['geometry']['x'], place['geometry']['y']
+                if place['geometryType'] == self.GEOMETRIES['point']:
+                    return place['geometry']['x'], place['geometry']['y']
+                if place['geometryType'] == self.GEOMETRIES['polygon']:
+                    return centroid(place['geometry']['rings'][0])
 
         raise ValueError(f"Location '{self.description}' not found")
 
