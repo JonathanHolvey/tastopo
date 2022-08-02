@@ -1,5 +1,6 @@
-from PIL import Image
 import io
+
+from PIL import Image
 
 
 def frombytes(data):
@@ -16,7 +17,7 @@ def tobytes(image):
 
 def stitch(tiles, size, start=(0, 0)):
     """Join an array of image tiles into a single image"""
-    result = Image.new('RGB', size)
+    result = Image.new('RGBA', size)
 
     x = 0
     y = 0
