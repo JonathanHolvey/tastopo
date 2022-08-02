@@ -39,14 +39,14 @@ setup(
     package_dir={'': './src'},
     package_data={'': ['templates/default.svg']},
     python_requires='>=3.6, <4',
-    # This is generated automatically. Run `pipenv run sync` to update
+    # This is generated automatically. Run `pipenv run setup-sync` to update
     install_requires=[
         'docopt~=0.6',
         'requests~=2.26',
         'svglib~=1.1',
-        'lxml~=4.6',
         'reportlab~=3.5',
         'pillow~=8.3',
     ],
+
     scripts=['./tastopo'],
 )

@@ -1,8 +1,9 @@
+import platform
+import re
+
 from lxml import etree
 from svglib.svglib import SvgRenderer
 from reportlab.graphics import renderPDF
-import platform
-import re
 
 INVALID_FILENAME_CHARS = {
     'Linux': '/',

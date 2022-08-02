@@ -73,11 +73,11 @@ class SVG:
 
 
 class Layout:
+    """A map sheet layout"""
     MAX_GRID_SPACING = 50
     INFO_ORDER = ['scale', 'grid', 'datum', 'declination', 'centre', 'size']
     GRID_SIZES = [200, 100, 50, 25, 10, 5, 4, 3, 2, 1, 0.5, 0.25, 0.1, 0.05, 0.025, 0.01]
 
-    """A map sheet layout"""
     def __init__(self, sheet, location, image, title=None):
         self.sheet = sheet
         self.location = location
