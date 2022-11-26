@@ -26,5 +26,6 @@ listapi = Client(
 
 magapi = Client(
     'https://www.ngdc.noaa.gov/geomag-web/calculators/',
-    {'resultFormat': 'json'}
+    # This key is the one used by the NOAA online calculator frontend
+    {'resultFormat': 'json', 'key': 'zNEw7'}
 )
