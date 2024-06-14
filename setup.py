@@ -23,7 +23,6 @@ setup(
     long_description_content_type='text/markdown',
     url='https://github.com/jonathanholvey/tastopo',
     author='Jonathan Holvey',
-    author_email='jonathan.holvey@outlook.com',
     project_urls={
         'Bug Reports': 'https://github.com/jonathanholvey/tastopo/issues',
         'Source': 'https://github.com/jonathanholvey/tastopo/',
