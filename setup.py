@@ -44,8 +44,8 @@ setup(
         'docopt~=0.6',
         'requests~=2.26',
         'svglib~=1.1',
-        'reportlab~=3.5',
-        'pillow~=8.3',
+        'reportlab~=3.6.13',
+        'pillow~=10.3'
     ],
 
     scripts=['./tastopo'],

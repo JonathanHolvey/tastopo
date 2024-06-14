@@ -7,14 +7,15 @@ name = "pypi"
 docopt = "~=0.6"
 requests = "~=2.26"
 svglib = "~=1.1"
-reportlab = "~=3.5"
-pillow = "~=8.3"
+reportlab = "~=3.6.13"
+pillow = "~=10.3"
 
 [dev-packages]
 pipenv-setup = "*"
+vistir = "0.6.1"
 
 [requires]
-python_version = "3.9"
+python_version = "3.11"
 
 [scripts]
 setup-sync = "pipenv-setup sync --pipfile"
