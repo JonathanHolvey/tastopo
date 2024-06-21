@@ -2,6 +2,7 @@ from importlib import resources
 
 from base64 import b64encode
 from lxml import etree
+from datetime import date
 
 
 class SVG:
@@ -91,6 +92,7 @@ class Layout:
             'size': sheet.spec.upper(),
             'declination': '{:+.1f}°'.format(self.location.declination)
         }
+        self.date = date.today()
 
     def compose(self):
         """Set the layout's variable elements"""
@@ -104,15 +106,17 @@ class Layout:
                 'grid': '//svg:g[@id="map-grid"]',
                 'logos': '//svg:g[@id="footer-logos"]',
                 'text': '//svg:g[@id="footer-text"]',
+                'date': '//svg:text[@id="date"]',
             })
 
         self._size(svg)
+        if self.grid:
+            self._drawgrid(svg)
         mapdata = 'data:image/png;base64,' + b64encode(self.image.mapdata).decode('utf-8')
         svg.get('image').attrib[svg.ns('xlink:href')] = mapdata
         svg.get('title').text = self.title
-        if self.grid:
-            self._drawgrid(svg)
         svg.get('info').text = self.format_info()
+        svg.get('date').text = self.date.strftime('%Y-%m-%d')
 
         return svg.document.getroot()
 
@@ -144,7 +148,7 @@ class Layout:
         for x in range(1, int(width / spacing) + 1):
             svg.line('grid', (x * spacing, 0), (x * spacing, height))
         for y in range(1, int(height / spacing) + 1):
-            svg.line('grid', (0, height - y * spacing), (width, height - y * spacing))        
+            svg.line('grid', (0, height - y * spacing), (width, height - y * spacing))
 
         self.details['grid'] = (f'{grid_size}\u2009km' if grid_size >= 1
                                 else f'{grid_size * 1000:.0f}\u2009m')
