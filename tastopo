@@ -24,6 +24,8 @@ Map location
     - 'geo:-43.643611,146.8275'
 """
 
+from typing import cast
+
 from docopt import docopt, DocoptExit
 
 try:
@@ -45,7 +47,7 @@ if __name__ == '__main__':
     try:
         tastopo.validate(args)
 
-        translate = [-1 * int(x) for x in args['--translate'].split(',')]
+        translate = cast(tuple[int, int], tuple([-1 * int(x) for x in args['--translate'].split(',')]))
         location = tastopo.Location(args['<location>'], translate)
 
         sheet = tastopo.Sheet(args['--paper'], args['--portrait'])

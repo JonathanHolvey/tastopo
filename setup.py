@@ -37,7 +37,7 @@ setup(
     packages=find_packages("./src"),
     package_dir={'': './src'},
     package_data={'': ['templates/default.svg']},
-    python_requires='>=3.6, <4',
+    python_requires='>=3.9, <4',
     # This is generated automatically. Run `pipenv run setup-sync` to update
     install_requires=[
         'docopt~=0.6',

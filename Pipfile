@@ -13,9 +13,14 @@ pillow = "~=10.3"
 [dev-packages]
 pipenv-setup = "*"
 vistir = "0.6.1"
+mypy = "*"
+types-pillow = "*"
+types-docopt = "*"
+types-requests = "*"
+types-lxml = "*"
 
 [requires]
-python_version = "3.11"
+python_version = "3.9"
 
 [scripts]
 setup-sync = "pipenv-setup sync --pipfile"
