@@ -18,9 +18,11 @@ types-pillow = "*"
 types-docopt = "*"
 types-requests = "*"
 types-lxml = "*"
+build = "*"
 
 [requires]
 python_version = "3.9"
 
 [scripts]
 setup-sync = "pipenv-setup sync --pipfile"
+build = "python -m build"
