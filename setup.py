@@ -17,13 +17,12 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 
 setup(
     name='tastopo',
-    version='1.1.1',
+    version='1.2.0',
     description='Generate printable topographic maps for anywhere in Tasmania',
     long_description=abs_urls(long_description),
     long_description_content_type='text/markdown',
     url='https://github.com/jonathanholvey/tastopo',
     author='Jonathan Holvey',
-    author_email='jonathan.holvey@outlook.com',
     project_urls={
         'Bug Reports': 'https://github.com/jonathanholvey/tastopo/issues',
         'Source': 'https://github.com/jonathanholvey/tastopo/',
@@ -38,14 +37,14 @@ setup(
     packages=find_packages("./src"),
     package_dir={'': './src'},
     package_data={'': ['templates/default.svg']},
-    python_requires='>=3.6, <4',
+    python_requires='>=3.9, <4',
     # This is generated automatically. Run `pipenv run setup-sync` to update
     install_requires=[
         'docopt~=0.6',
         'requests~=2.26',
         'svglib~=1.1',
-        'reportlab~=3.5',
-        'pillow~=8.3',
+        'reportlab~=3.6.13',
+        'pillow~=10.3'
     ],
 
     scripts=['./tastopo'],

@@ -12,14 +12,22 @@ INVALID_FILENAME_CHARS = {
 }
 
 
-def clean_filename(filename):
-    """Remove invalid characters from a filename"""
+def clean_filename(filename: str) -> str:
+    """Remove invalid characters from a filename
+
+    :param filename: The original file name for cleaning
+    :returns: The sanitised file name
+    """
     invalid = INVALID_FILENAME_CHARS.get(platform.system(), INVALID_FILENAME_CHARS['Linux'])
     return re.sub(r' +', ' ', ''.join(c for c in filename if c not in invalid))
 
 
-def export_map(svg, filetype, filename):
-    """Export a map document"""
+def export_map(svg: etree._Element, filetype: str, filename: str):
+    """Export a map document
+
+    :param svg: The map SVG root element to be exported
+    :param filetype: The file type/extension to export the map SVG as
+    :param filename: The name of the output file, with or without an extension"""
     filetype = filetype.casefold()
     extension = '.' + filetype
     if not filename.endswith(extension):

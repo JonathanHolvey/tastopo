@@ -1,6 +1,16 @@
-def centroid(points):
+from typing import Sequence
+
+from ..types import Point
+
+
+def centroid(points: Sequence[Point]) -> Point:
     """Calculate the centroid of a polygon defined by a list of vertex coordinates.
-    Formula from Bourke (1997) http://paulbourke.net/geometry/polygonmesh"""
+
+    Formula from Bourke (1997) http://paulbourke.net/geometry/polygonmesh
+
+    :param points: A list of points that describe the outline of a polygon
+    :returns: The x and y position of the polygon's centre
+    """
     p = points
     index = range(len(points) - 1)
     # Calculate the area, then coordinates of the centroid
