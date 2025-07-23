@@ -1,0 +1,8 @@
+[build-system]
+requires = ['setuptools >= 49.9.0']
+build-backend = 'setuptools.build_meta'
+
+[tool.pylsp-mypy]
+enabled = true
+live_mode = true
+strict = true

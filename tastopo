@@ -31,7 +31,7 @@ from docopt import docopt, DocoptExit
 try:
     from src import tastopo
 except ModuleNotFoundError:
-    import tastopo
+    import tastopo  # type: ignore
 
 
 __version__ = '1.2.0'
@@ -47,7 +47,7 @@ if __name__ == '__main__':
     try:
         tastopo.validate(args)
 
-        translate = cast(tuple[int, int], tuple([-1 * int(x) for x in args['--translate'].split(',')]))
+        translate = cast(tuple[int, int], (-1 * int(x) for x in args['--translate'].split(',', 1)))
         location = tastopo.Location(args['<location>'], translate)
 
         sheet = tastopo.Sheet(args['--paper'], args['--portrait'])
